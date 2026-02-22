@@ -1,0 +1,135 @@
+﻿Tôi là một Senior Unity Developer. Hãy thiết kế một hệ thống UI Framework production-ready cho Unity với các yêu cầu sau:
+1. Core Goals
+Hệ thống phải:
+* Scalable cho project lớn (50+ screens, popup, HUD)
+* Modular & extensible
+* Decoupled giữa UI – Domain – Data
+* Addressable compatible (load/unload async)
+* Memory safe (không leak, không giữ reference thừa)
+* Testable (unit test được phần logic)
+* Editor-friendly
+* Multiplayer-safe (không phụ thuộc static state bừa bãi)
+2. Architecture Requirements
+2.1 Separation of Concerns
+Bắt buộc tách rõ:
+* UI View (MonoBehaviour)
+* UI Logic / Controller
+* UI Data / ViewModel
+* UI Service / UI Manager
+* Domain Layer (không phụ thuộc UI)
+Không cho phép:
+* Business logic nằm trong MonoBehaviour
+* View trực tiếp gọi Domain
+* Hard reference giữa các màn hình
+2.2 UI Base Abstraction
+Thiết kế các abstract base class sau:
+`UIBase`
+* Show()
+* Hide()
+* Initialize(data)
+* Dispose()
+* Refresh()
+UIBase không được RequireComponent
+`UIPopup : UIBase`
+* Support stacking
+* Modal / Non-modal
+* Block raycast
+`UIScreen : UIBase`
+* Full screen
+* Only one active at a time (configurable)
+2.3 UI Manager
+Tạo `UIManager` có khả năng:
+* Show<T>()
+* Hide<T>()
+* HideAll()
+* HideAllIgnore()
+* Get<T>()
+* Check if opened
+* Manage stack
+* Manage layer (HUD, Screen, Popup, Overlay)
+Không được dùng FindObjectOfType.
+3. Addressable Integration ( Option có thể dùng hoặc là dùng prefabs thường)
+UI phải:
+* Load prefab bằng Addressables
+* Async open
+* Support preload
+* Auto release khi close
+* Có option cache
+* Track memory usage
+Phải handle:
+* Double open race condition
+* Open → close → open nhanh
+* Scene unload safety
+4. Data Flow
+Thiết kế hệ thống theo 1 trong các pattern sau:
+* MVVM (recommended) hoặc
+* MVP
+View không chứa state phức tạp.
+UI Data phải:
+* Immutable hoặc controlled mutation
+* Serializable nếu cần save state
+5. Communication System
+UI không được gọi trực tiếp lẫn nhau.
+Cung cấp:
+* EventBus / Signal system hoặc Message Broker hoặc Command pattern
+Phải:
+* Decoupled
+* Weak reference safe
+* Không memory leak
+6. Customization
+Có option có thể inject vào trong UI hoặc không, vì có UI không cần anim, cũng có UI cần anim
+Các UI nào muốn sử dụng Anim nào thì sẽ inject anim đó vào ui đó, tức là 1 anim có thể sử dụng cho nhiều loại UI  
+Cho phép:
+* Inject animation strategy
+* Inject transition strategy
+* Inject input strategy
+* Inject layout strategy
+Ví dụ:
+* Fade transition
+* Slide transition
+* Scale popup animation
+7. Async Handling
+Có thêm cách load async bằng Unitask, nếu không dùng load async thì có thể load bình thường. 
+Tức là có 2 option cho dev, nhưng nếu dev muốn load async thì phải hỗ trợ Unitask, còn nếu dev không muốn load async thì có thể load bình thường mà không cần Unitask
+Phải hỗ trợ:
+* UniTask không dùng Task của C#
+* CancellationToken
+* Handle closing khi đang loading
+8. Performance
+Phải:
+* Tránh GC spike
+* Không lambda trong Update
+* Không alloc mỗi frame
+* Object pooling cho popup thường xuyên
+* Batch friendly (Canvas grouping strategy)
+9. Editor Tooling
+Cung cấp:
+* UI registry ScriptableObject
+* Auto generate enum ID
+* Validate duplicate address
+* Debug window
+10. Safety
+Handle:
+* Scene reload
+* Domain reload
+* PlayMode reload
+* Mobile pause/resume
+11. Testing
+Cho phép:
+* Test UI logic không cần instantiate prefab
+* Mock data
+* Inject fake service
+12. Expected Deliverables
+Yêu cầu AI trả về:
+* High-level architecture diagram (text format)
+* Folder structure
+* Base class implementation
+* UIManager implementation
+* Addressable loader implementation and normal loader implementation
+* Example screen + popup
+* EventBus implementation
+* Memory lifecycle explanation
+* Flow when opening 1 popup
+*  Flow when switching screens
+*  Code editor tool auto create popup/screen and register to UIManager
+* Code phải clean, production-ready, SOLID compliant.
