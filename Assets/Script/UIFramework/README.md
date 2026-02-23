@@ -2,528 +2,432 @@
 
 ## Architecture Overview
 
-The UI Framework is built on a layered architecture following SOLID principles and separation of concerns:
-
 ```
 ???????????????????????????????????????????????????????????
-?                 PRESENTATION LAYER                       ?
-?  UIScreen, UIPopup, UIHUD (MonoBehaviour Views)         ?
+?                    PRESENTATION LAYER                    ?
 ???????????????????????????????????????????????????????????
-?                 CONTROLLER LAYER                         ?
-?  UI Logic / Presenter / Controller                       ?
+?  UIView (MonoBehaviour) ? IUITransition ? IUIAnimation  ?
+?           ?                                              ?
+?  UIController (Logic) ? IInputStrategy                   ?
+?           ?                                              ?
+?  ViewModel (Data)                                        ?
 ???????????????????????????????????????????????????????????
-?                 VIEWMODEL LAYER                          ?
-?  Data Binding, Immutable Data, State Management         ?
+                          ?
 ???????????????????????????????????????????????????????????
-?                 SERVICE LAYER                            ?
-?  UIManager, UILoader, EventBus, UIFactory               ?
+?                   UI SERVICE LAYER                       ?
 ???????????????????????????????????????????????????????????
-?                 DOMAIN LAYER                             ?
-?  Business Logic (No UI Dependencies)                     ?
+?  UIManager ? UIRegistry (ScriptableObject)              ?
+?     ?                                                    ?
+?  IUILoader (Addressable/Prefab)                         ?
+?  UIPool (Pooling)                                       ?
+?  UILayerManager (HUD/Screen/Popup/Overlay)              ?
+???????????????????????????????????????????????????????????
+                          ?
+???????????????????????????????????????????????????????????
+?                 COMMUNICATION LAYER                      ?
+???????????????????????????????????????????????????????????
+?  EventBus / MessageBroker                               ?
+?  UICommand System                                        ?
+???????????????????????????????????????????????????????????
+                          ?
+???????????????????????????????????????????????????????????
+?                    DOMAIN LAYER                          ?
+???????????????????????????????????????????????????????????
+?  Business Logic (Game Services)                         ?
+?  Data Models                                             ?
 ???????????????????????????????????????????????????????????
 ```
 
 ## Folder Structure
 
 ```
-Assets/Script/UIFramework/
-??? Core/
-?   ??? UIBase.cs                  # Base class for all UI
-?   ??? UIScreen.cs                # Full screen UI
-?   ??? UIPopup.cs                 # Popup/Dialog UI
-?   ??? UIHUD.cs                   # HUD elements
-?   ??? IUITransition.cs           # Transition interface
-?   ??? Transitions/
-?       ??? FadeTransition.cs      # Fade animation
-?       ??? ScaleTransition.cs     # Scale animation
-?       ??? SlideTransition.cs     # Slide animation
-??? Manager/
-?   ??? UIManager.cs               # Central UI management
-?   ??? UIConfig.cs                # Configuration ScriptableObject
-??? Loading/
-?   ??? IUILoader.cs               # Loader interface
-?   ??? PrefabUILoader.cs          # Resources-based loader
-?   ??? AddressableUILoader.cs     # Addressables-based loader
-??? Events/
-?   ??? EventBus.cs                # Event communication system
-??? MVVM/
-?   ??? ViewModelBase.cs           # Base ViewModel
-?   ??? UIView.cs                  # MVVM View base class
-??? Examples/
-?   ??? MainMenuScreen.cs          # Example screen
-?   ??? RewardPopup.cs             # Example popup
-??? Editor/
-    ??? UIConfigEditor.cs          # Config inspector
-    ??? UICreatorWindow.cs         # UI creation tool
-    ??? UIDebugWindow.cs           # Runtime debug tool
-```
-
-## Core Components
-
-### UIBase
-Abstract base class for all UI elements. Provides:
-- Lifecycle methods: Initialize, Show, Hide, Refresh, Dispose
-- State management: Hidden, Showing, Visible, Hiding
-- Transition support via strategy pattern
-- Optional async support with UniTask
-
-### UIScreen
-Inherits from UIBase. Full-screen UI with:
-- Single active screen policy (configurable)
-- Automatic hiding of other screens
-
-### UIPopup
-Inherits from UIBase. Popup/Dialog UI with:
-- Stack management
-- Modal/Non-modal support
-- Background blocker
-- Close on background click option
-
-### UIHUD
-Inherits from UIBase. Always-visible HUD elements.
-
-## UIManager
-
-Central manager for all UI operations:
-
-### API Methods
-
-```csharp
-// Show UI (async with UniTask)
-await UIManager.Instance.ShowAsync<MainMenuScreen>(viewModel, transition);
-
-// Show UI (sync)
-UIManager.Instance.Show<MainMenuScreen>(viewModel, transition);
-
-// Hide UI
-await UIManager.Instance.HideAsync<MainMenuScreen>();
-UIManager.Instance.Hide<MainMenuScreen>();
-
-// Get active UI instance
-var menu = UIManager.Instance.Get<MainMenuScreen>();
-
-// Check if UI is opened
-bool isOpen = UIManager.Instance.IsOpened<MainMenuScreen>();
-
-// Hide all UIs
-await UIManager.Instance.HideAllAsync();
-UIManager.Instance.HideAll();
-
-// Hide all except specific types
-await UIManager.Instance.HideAllIgnoreAsync(new[] { typeof(UIHUD) });
-UIManager.Instance.HideAllIgnore(typeof(UIHUD));
-
-// Popup stack management
-var topPopup = UIManager.Instance.GetTopPopup();
-int stackCount = UIManager.Instance.GetPopupStackCount();
-```
-
-## Loading System
-
-### PrefabUILoader
-Loads UI from Resources folder:
-```csharp
-var loader = new PrefabUILoader(useCaching: true);
-```
-
-### AddressableUILoader
-Loads UI from Addressables:
-```csharp
-var loader = new AddressableUILoader(useCaching: true);
-```
-
-Features:
-- Async loading with cancellation support
-- Memory tracking
-- Preloading support
-- Auto-release on close
-- Cache management
-- Race condition handling
-
-## MVVM Pattern
-
-### ViewModel Example
-```csharp
-[Serializable]
-public class MainMenuViewModel : ViewModelBase
-{
-    private string _playerName;
-    
-    public string PlayerName
-    {
-        get => _playerName;
-        set
-        {
-            if (_playerName != value)
-            {
-                _playerName = value;
-                NotifyPropertyChanged(); // Triggers UI update
-            }
-        }
-    }
-}
-```
-
-### View Example
-```csharp
-public class MainMenuScreen : UIView<MainMenuViewModel>
-{
-    [SerializeField] private Text _playerNameText;
-    
-    protected override void OnViewModelChanged()
-    {
-        if (ViewModel == null) return;
-        _playerNameText.text = ViewModel.PlayerName;
-    }
-}
-```
-
-## Event System
-
-Decoupled communication using EventBus:
-
-```csharp
-// Subscribe to events
-EventBus.Instance.Subscribe<UIOpenedEvent>(OnUIOpened);
-
-// Publish events
-EventBus.Instance.Publish(new UIOpenedEvent 
-{ 
-    UIType = typeof(MainMenuScreen), 
-    Data = viewModel 
-});
-
-// Unsubscribe
-EventBus.Instance.Unsubscribe<UIOpenedEvent>(OnUIOpened);
-```
-
-Built-in Events:
-- `UIOpenedEvent` - UI was opened
-- `UIClosedEvent` - UI was closed
-- `UIScreenChangedEvent` - Screen switched
-- `UIPopupStackChangedEvent` - Popup stack changed
-
-Features:
-- Weak references (no memory leaks)
-- Thread-safe
-- Auto cleanup of dead references
-- Type-safe
-
-## Transition System
-
-Injectable animation strategies:
-
-```csharp
-// Fade transition
-var fadeTransition = new FadeTransition(duration: 0.3f);
-await UIManager.Instance.ShowAsync<MainMenuScreen>(null, fadeTransition);
-
-// Scale transition
-var scaleTransition = new ScaleTransition(
-    duration: 0.3f,
-    startScale: new Vector3(0.5f, 0.5f, 1f)
-);
-
-// Slide transition
-var slideTransition = new SlideTransition(
-    duration: 0.3f,
-    direction: SlideTransition.Direction.Bottom
-);
+Assets/
+??? Script/
+?   ??? UIFramework/
+?       ??? Core/
+?       ?   ??? Base/
+?       ?   ?   ??? UIBase.cs
+?       ?   ?   ??? UIControllerBase.cs
+?       ?   ?   ??? UIDataBase.cs
+?       ?   ?   ??? UIScreen.cs
+?       ?   ?   ??? UIPopup.cs
+?       ?   ?   ??? UIHud.cs
+?       ?   ??? Interfaces/
+?       ?   ?   ??? IUIView.cs
+?       ?   ?   ??? IUIController.cs
+?       ?   ?   ??? IUIData.cs
+?       ?   ?   ??? IUITransition.cs
+?       ?   ?   ??? IUIAnimation.cs
+?       ?   ?   ??? IInputStrategy.cs
+?       ?   ?   ??? IUILoader.cs
+?       ?   ??? Enums/
+?       ?       ??? UILayer.cs
+?       ?       ??? UIState.cs
+?       ??? Managers/
+?       ?   ??? UIManager.cs
+?       ?   ??? UILayerManager.cs
+?       ??? Loaders/
+?       ?   ??? PrefabUILoader.cs
+?       ?   ??? AddressableUILoader.cs
+?       ??? Data/
+?       ?   ??? UIRegistry.cs
+?       ??? Pooling/
+?       ?   ??? UIPool.cs
+?       ??? Communication/
+?       ?   ??? EventBus.cs
+?       ?   ??? UICommandInvoker.cs
+?       ??? Animations/
+?       ?   ??? FadeTransition.cs
+?       ?   ??? ScaleAnimation.cs
+?       ?   ??? SlideTransition.cs
+?       ??? Examples/
+?       ?   ??? MainMenuScreen.cs
+?       ?   ??? ConfirmationPopup.cs
+?       ?   ??? PlayerHud.cs
+?       ?   ??? Events/
+?       ?       ??? UIEvents.cs
+?       ??? Editor/
+?       ?   ??? UIRegistryEditor.cs
+?       ?   ??? UICreatorWizard.cs
+?       ?   ??? UIDebugWindow.cs
+?       ??? Tests/
+?       ?   ??? UIFrameworkTests.cs
+?       ??? Generated/
+?           ??? UIViewId.cs (auto-generated)
+??? Prefabs/
+    ??? UI/
+        ??? MainMenuScreen.prefab
+        ??? ConfirmationPopup.prefab
+        ??? PlayerHud.prefab
 ```
 
 ## Memory Lifecycle
 
-### Opening a Popup Flow
-```
-1. User calls UIManager.ShowAsync<RewardPopup>(data)
-2. UIManager checks if popup is already loading (race condition)
-3. UIManager checks if popup is already active
-4. UIManager loads prefab via IUILoader
-   - If cached: reuse instance
-   - If not: load from Resources/Addressables
-5. UIManager initializes popup with data
-6. UIManager adds to active UIs dictionary
-7. UIManager pushes to popup stack
-8. Popup.ShowAsync() called with optional transition
-9. EventBus publishes UIOpenedEvent
-```
+### UI Instance Lifecycle
 
-### Closing a Popup Flow
 ```
-1. User calls UIManager.HideAsync<RewardPopup>()
-2. UIManager cancels any pending load operations
-3. UIManager retrieves popup from active UIs
-4. Popup.HideAsync() called with optional transition
-5. UIManager removes from popup stack
-6. UIManager removes from active UIs
-7. If caching disabled:
-   - Popup.Dispose() called
-   - IUILoader.Release() called
-   - GameObject destroyed
-8. If caching enabled:
-   - Popup moved to cache dictionary
-9. EventBus publishes UIClosedEvent
+[None] 
+  ? Load (Addressable/Prefab) 
+  ? [Loading]
+  ? Initialize(data)
+  ? [Hidden]
+  ? Show()
+  ? [Showing] (with animation/transition)
+  ? [Visible]
+  ? Hide()
+  ? [Hiding] (with animation/transition)
+  ? [Hidden]
+  ? Cache/Pool/Dispose
+  ? [Disposed]
 ```
 
-### Screen Switching Flow
+### Memory Management Rules
+
+1. **No Caching/Pooling**: Instance is destroyed immediately
+   - `UIBase.Dispose()` ? `GameObject.Destroy()`
+   - Memory released immediately
+
+2. **Caching Enabled**: Instance kept in memory, reused on next Show()
+   - Hidden but not destroyed
+   - Transform moved to root (inactive)
+   - Reinitialized on next Show()
+
+3. **Pooling Enabled**: Instance returned to pool
+   - Multiple instances kept in pool
+   - Pre-warmed for frequently used UI
+   - No instantiate/destroy overhead
+
+### Reference Management
+
+- **EventBus**: Uses WeakReference to prevent memory leaks
+- **Controllers**: Disposed when view is disposed
+- **UI Events**: Automatically cleaned up via weak references
+- **Loaders**: Track handles and release on unload
+
+## Flow: Opening a Popup
+
 ```
-1. User calls UIManager.ShowAsync<GameScreen>(data)
-2. UIManager loads/retrieves GameScreen
-3. GameScreen.Initialize(data) called
-4. If AllowMultipleInstances = false:
-   - UIManager hides all other screens
-5. GameScreen.ShowAsync() called
-6. EventBus publishes UIScreenChangedEvent
+1. UIManager.Show<ConfirmationPopup>(data)
+   ?
+2. Check if already opened ? Return existing if visible
+   ?
+3. Check loading operations ? Cancel previous if exists (race condition)
+   ?
+4. Get from Cache/Pool ? If found, skip loading
+   ?
+5. Load (if not cached)
+   ?? Get UIConfig from Registry
+   ?? Get Layer root (Popup layer)
+   ?? Load via IUILoader (Addressable/Prefab)
+   ?? Get UIBase component
+   ?
+6. Initialize
+   ?? Create Controller
+   ?? controller.Initialize(view, data)
+   ?? Bind UI events
+   ?? Update UI elements with data
+   ?
+7. Add to openedViews dictionary
+   ?
+8. Show()
+   ?? Set state = Showing
+   ?? SetActive(true)
+   ?? OnBeforeShow()
+   ?? Play Transition/Animation (if injected)
+   ?? controller.OnShow()
+   ?? Set state = Visible
 ```
 
-## Memory Safety
+## Flow: Switching Screens
 
-### No Memory Leaks
-- Weak references in EventBus
-- Proper cleanup in Dispose()
-- CancellationToken support for async operations
-- Auto-release of Addressables handles
+```
+1. UIManager.Show<GameplayScreen>()
+   ?
+2. Load GameplayScreen (same as popup flow)
+   ?
+3. Push to screenStack
+   ?
+4. Show GameplayScreen
+   ?
+5. (Optional) Hide previous screen
+   ?? Get current screen from stack
+   ?? UIManager.Hide(previousScreen)
+   ?? Handle caching/pooling
+```
 
-### No Excessive References
-- Views don't reference other views
-- Communication via EventBus
-- ViewModel pattern separates data from view
-- UIManager uses Type keys, not GameObject references
+### Screen Stack Management
 
-### GC Friendly
-- Object pooling support for frequent popups
-- No lambda allocations in Update()
-- Cached dictionaries for lookups
-- StringBuilder for string operations
+```
+Stack: [MainMenu] 
+  ? Show(GameplayScreen) 
+  ? Stack: [MainMenu, GameplayScreen]
+  ? ShowPreviousScreen()
+  ? Hide(GameplayScreen)
+  ? Stack: [MainMenu]
+  ? Show(MainMenu)
+```
 
-## Editor Tools
+## Usage Examples
 
-### UI Creator Window
-**Menu: Window > UI Framework > UI Creator**
+### Basic Usage (Synchronous)
 
-Features:
-- Auto-generate UI scripts (Screen/Popup/HUD)
-- Auto-generate ViewModel scripts
-- Auto-register to UIConfig
-- Customizable templates
-
-### UI Debug Window
-**Menu: Window > UI Framework > Debug Window**
-
-Features:
-- View active UIs in real-time
-- Monitor popup stack
-- Track memory usage
-- Quick actions (Hide All, Clear EventBus)
-
-### UI Config Inspector
-Custom inspector for UIConfig with:
-- Validate registry (check duplicates)
-- Clear all entries
-- UI element count
-
-## Configuration
-
-### Create UI Config
-1. Right-click in Project
-2. Create > UIFramework > UI Config
-3. Configure settings:
-   - Use Addressables: true/false
-   - Use Caching: true/false
-4. Add UI elements manually or use UI Creator
-
-### Register UI
 ```csharp
-UIManager.Instance.RegisterUI(typeof(MainMenuScreen), "UI/MainMenuScreen");
-```
+// Show a screen
+var menuData = new MainMenuData("Welcome!", true);
+UIManager.Instance.Show<MainMenuScreen>(menuData);
 
-Or add to UIConfig ScriptableObject.
+// Show a popup
+var confirmData = new ConfirmationPopupData(
+    "Confirm Action",
+    "Are you sure?",
+    onConfirm: () => Debug.Log("Confirmed!"),
+    onCancel: () => Debug.Log("Cancelled!")
+);
+UIManager.Instance.Show<ConfirmationPopup>(confirmData);
 
-## Testing
+// Hide
+UIManager.Instance.Hide<ConfirmationPopup>();
 
-### Unit Test Example
-```csharp
-[Test]
-public void ViewModel_PropertyChanged_NotifiesObservers()
+// Check if opened
+if (UIManager.Instance.IsOpened<MainMenuScreen>())
 {
-    var viewModel = new MainMenuViewModel("Player", 1, 100);
-    bool notified = false;
-    
-    viewModel.OnDataChanged += () => notified = true;
-    viewModel.PlayerName = "NewName";
-    
-    Assert.IsTrue(notified);
-    Assert.AreEqual("NewName", viewModel.PlayerName);
+    Debug.Log("Main menu is open");
 }
 ```
 
-### Mock Services
+### Async Usage (with UniTask)
+
 ```csharp
-public class MockUILoader : IUILoader
+// Define UNITASK_SUPPORT in project settings
+
+public async UniTask ShowMenuAsync()
 {
-    public UniTask<T> LoadAsync<T>(string address, Transform parent, CancellationToken ct) 
+    var cts = new CancellationTokenSource();
+    
+    try
     {
-        // Return mock UI
+        var menuData = new MainMenuData("Welcome!", true);
+        var menu = await UIManager.Instance.ShowAsync<MainMenuScreen>(
+            menuData, 
+            cts.Token
+        );
+        
+        if (menu != null)
+        {
+            Debug.Log("Menu loaded successfully");
+        }
+    }
+    catch (OperationCanceledException)
+    {
+        Debug.Log("Loading cancelled");
+    }
+}
+```
+
+### Injecting Animations
+
+```csharp
+// In your screen/popup class
+protected override void OnInitialize(IUIData data)
+{
+    base.OnInitialize(data);
+    
+    // Inject scale animation for popup
+    SetAnimation(new ScaleAnimation(0.25f));
+    
+    // Or inject fade transition
+    // SetTransition(new FadeTransition(0.3f));
+    
+    // Or inject slide transition
+    // SetTransition(new SlideTransition(SlideDirection.Bottom, 0.3f));
+}
+```
+
+### Using EventBus for Communication
+
+```csharp
+// Subscribe to event
+public class GameController : IEventHandler<PlayButtonClickedEvent>
+{
+    public void Initialize()
+    {
+        EventBus.Instance.Subscribe<PlayButtonClickedEvent>(this);
+    }
+    
+    public void Handle(PlayButtonClickedEvent eventData)
+    {
+        // Handle the event
+        StartGame();
+    }
+    
+    public void Dispose()
+    {
+        EventBus.Instance.Unsubscribe<PlayButtonClickedEvent>(this);
     }
 }
 
-// Inject mock
-UIManager.Instance.SetLoader(new MockUILoader());
+// Publish event (from UI controller)
+EventBus.Instance.Publish(new PlayButtonClickedEvent());
+```
+
+### Preloading & Caching
+
+```csharp
+// Preload a screen
+UIManager.Instance.Preload("MainMenuScreen");
+
+// Async preload
+await UIManager.Instance.PreloadAsync("GameplayScreen", cancellationToken);
+
+// Prewarm pool (for frequently used popups)
+UIManager.Instance.PrewarmPool("ConfirmationPopup", 3);
+```
+
+### Testing
+
+```csharp
+[Test]
+public void Controller_OnButtonPressed_PublishesEvent()
+{
+    // Arrange
+    var controller = new MainMenuController();
+    var view = new MockUIView();
+    var data = new MainMenuData("Test", false);
+    var eventHandler = new TestEventHandler();
+    
+    EventBus.Instance.Subscribe<PlayButtonClickedEvent>(eventHandler);
+    controller.Initialize(view, data);
+    
+    // Act
+    controller.OnPlayButtonPressed();
+    
+    // Assert
+    Assert.IsTrue(eventHandler.WasCalled);
+}
 ```
 
 ## Performance Best Practices
 
-1. **Use Object Pooling** for frequently shown/hidden popups
-2. **Preload** common UIs during loading screens
-3. **Use Addressables** for large projects
-4. **Enable Caching** for better performance
-5. **Batch Canvas Updates** - group UI elements by canvas
-6. **Avoid Update()** - use events instead
-7. **Use UniTask** for async operations (better than coroutines)
+1. **Avoid GC Spikes**
+   - Use object pooling for frequently used UI
+   - Reuse instances via caching
+   - Avoid string concatenation in Update loops
 
-## Safety Features
+2. **No Allocations in Update**
+   - Pre-allocate collections
+   - Cache component references
+   - Use events instead of polling
 
-### Scene Reload
-- DontDestroyOnLoad on UIManager
-- Auto-cleanup on scene unload
-- Re-initialization support
+3. **Canvas Optimization**
+   - Each layer has its own Canvas (batch friendly)
+   - Use CanvasGroup for transitions
+   - Avoid unnecessary raycasts
 
-### Domain Reload
-- Static cleanup in OnDestroy
-- EventBus survives domain reload
-- Config persists as ScriptableObject
+4. **Memory Safety**
+   - EventBus uses WeakReference
+   - Controllers disposed with views
+   - Addressable handles tracked and released
 
-### Mobile Pause/Resume
-- OnApplicationPause cleanup
-- EventBus dead reference cleanup
-- Memory optimization
+## Editor Tools
 
-## Usage Examples
+### UI Creator Wizard
+`Window ? UIFramework ? UI Creator Wizard`
+- Auto-creates View, Controller, Data scripts
+- Creates prefab with proper setup
+- Option to add to registry
 
-### Basic Screen
-```csharp
-// Create ViewModel
-var viewModel = new MainMenuViewModel("Player", 5, 1000);
+### UI Debug Window
+`Window ? UIFramework ? UI Debug Window`
+- Shows opened views and states
+- Memory usage tracking
+- Manual hide/cache/pool actions
 
-// Show screen
-await UIManager.Instance.ShowAsync<MainMenuScreen>(viewModel);
+### UI Registry Editor
+- Validates duplicate ViewIds
+- Generates ViewId enum
+- Validates addressable paths
 
-// Hide screen
-await UIManager.Instance.HideAsync<MainMenuScreen>();
-```
+## Configuration
 
-### Popup with Callback
-```csharp
-var popupData = new RewardPopupData(
-    "Daily Reward",
-    "You received daily rewards!",
-    gold: 500,
-    gems: 50,
-    onClaim: () => {
-        Debug.Log("Reward claimed!");
-        // Add gold/gems to player
-    }
-);
+### Enable UniTask Support
+Add `UNITASK_SUPPORT` to Project Settings ? Player ? Scripting Define Symbols
 
-await UIManager.Instance.ShowAsync<RewardPopup>(
-    popupData,
-    new ScaleTransition(0.3f)
-);
-```
+### Enable Addressables Support
+Add `ADDRESSABLES_SUPPORT` to Project Settings ? Player ? Scripting Define Symbols
 
-### With Events
-```csharp
-void Start()
-{
-    EventBus.Instance.Subscribe<UIOpenedEvent>(OnAnyUIOpened);
-}
+## Integration Checklist
 
-void OnAnyUIOpened(UIOpenedEvent evt)
-{
-    Debug.Log($"UI Opened: {evt.UIType.Name}");
-}
+1. ? Create UIRegistry asset: `Assets ? Create ? UIFramework ? UI Registry`
+2. ? Assign registry to UIManager
+3. ? Configure UI layers in UILayerManager
+4. ? Add UI configs to registry
+5. ? Create UI views using wizard or manually
+6. ? Test in play mode
+7. ? Open Debug Window to monitor
 
-void OnDestroy()
-{
-    EventBus.Instance.Unsubscribe<UIOpenedEvent>(OnAnyUIOpened);
-}
-```
+## Multiplayer Safety
 
-## Multiplayer Considerations
+- No static state dependencies (except singleton for convenience)
+- Instance-based design allows multiple UIManager instances
+- EventBus can be instantiated per session
+- No FindObjectOfType usage
 
-- No static state dependencies
-- Instance-based UIManager
-- EventBus per instance
-- Support for multiple UI roots
-- Configurable via ScriptableObject
+## Platform Support
+
+- **Mobile**: OnApplicationPause handled
+- **PC/Console**: Domain reload safe
+- **WebGL**: Memory tracking optimized
 
 ## Extension Points
 
-### Custom Transitions
-```csharp
-public class CustomTransition : IUITransition
-{
-    public async UniTask ShowAsync(UIBase ui, CancellationToken ct)
-    {
-        // Custom show animation
-    }
-    
-    public async UniTask HideAsync(UIBase ui, CancellationToken ct)
-    {
-        // Custom hide animation
-    }
-}
-```
+- **IUITransition**: Custom transitions
+- **IUIAnimation**: Custom animations
+- **IInputStrategy**: Custom input handling
+- **IUILoader**: Custom loading strategies
+- **UIControllerBase**: Custom business logic
 
-### Custom Loaders
-```csharp
-public class CustomLoader : IUILoader
-{
-    // Implement IUILoader interface
-}
-```
+---
 
-### Custom Events
-```csharp
-public class CustomUIEvent : IUIEvent
-{
-    public string CustomData { get; set; }
-}
-
-EventBus.Instance.Publish(new CustomUIEvent { CustomData = "test" });
-```
-
-## Troubleshooting
-
-### UI not showing
-- Check if address is registered in UIConfig
-- Verify prefab path in Resources or Addressables
-- Check layer hierarchy in UIManager
-
-### Memory leak
-- Ensure Dispose() is called
-- Check for circular references
-- Use Weak References in custom code
-- Unsubscribe from events in OnDestroy
-
-### Race condition
-- Use CancellationToken properly
-- Check _loadingOperations in UIManager
-- Avoid rapid show/hide calls
-
-## Requirements Met
-
-? Scalable (50+ UIs supported)
-? Modular & Extensible
-? Decoupled architecture
-? Addressable compatible
-? Memory safe
-? Testable
-? Editor-friendly
-? Multiplayer-safe
-? MVVM pattern
-? EventBus communication
-? Injectable strategies
-? UniTask support
-? Performance optimized
-? Production-ready code
+**Framework Version**: 1.0  
+**Unity Compatibility**: 2019.4+  
+**Dependencies**: Optional (UniTask, Addressables)

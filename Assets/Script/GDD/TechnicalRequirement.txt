@@ -1,0 +1,36 @@
+﻿Role: Bạn là Unity Senior Developer chuyên về hệ thống Game Architecture và UI.
+
+
+Project Context: Tôi đang làm game trinh thám "Đỡ-Mi Truth" (Point & Click, 2D). Toàn bộ tương tác diễn ra trên UI Canvas. T
+ôi không muốn viết code, hãy xây dựng một hệ thống linh hoạt dựa trên ScriptableObject (SO) để tôi có thể tùy biến logic bằng cách kéo thả.
+
+Yêu cầu Kỹ thuật chi tiết:
+
+1. Hệ thống Dữ liệu (ScriptableObjects):
+* Tất cả các dữ liệu về phòng, vật thể, và hội thoại đều được lưu trữ dưới dạng ScriptableObject để dễ dàng quản lý và tùy chỉnh.
+	- Ví dụ gợi ý ( Nếu bạn thấy có vấn đề gì thì tự sửa): 
+		+ DialogueSequenceSO: Chứa một List các object DialogueLine (mỗi dòng gồm: id nhân vật và Nội dung văn bản).
+		+ DialogueCharacterSO: Chứa ID nhân vật, Tên nhân vật, và Ảnh đại diện.
+		+ ClueSO: Chứa ID, Tên, Ảnh icon, Ảnh phóng to, Mô tả, và một biến DialogueSequenceSO (hội thoại hiện ra khi vừa nhặt được vật thể).
+		+ RoomSO: Chứa tên phòng, Ảnh nền, biến có phải room khóa không isRoomLocked, trạng thái isLocked, kiểu khóa, mật mã passcode (nếu room khóa), và 3 biến DialogueSequenceSO: lockedDialogue (khi cửa khóa), afterUnlockDialogue (sau khi mở khóa thành công), và introDialogue (khi bắt đầu vào phòng chơi).
+* Các SO này sẽ được tạo ra trong Unity Editor và có thể dễ dàng kéo thả vào các thành phần khác nhau để tạo ra các kịch bản chơi khác nhau (ví dụ: một phòng có hội thoại, một phòng không có hội thoại, một vật thể có hội thoại khi nhặt, một vật thể không có hội thoại...).
+* Các SO này cũng sẽ cho phép tôi dễ dàng thêm mới hoặc chỉnh sửa dữ liệu mà không cần phải thay đổi code, giúp tăng tính linh hoạt và mở rộng của game.
+* Hệ thống này sẽ giúp tôi tập trung vào việc thiết kế nội dung và trải nghiệm người chơi mà không phải lo lắng về việc viết code cho từng tình huống cụ thể, đồng thời vẫn đảm bảo rằng mọi thứ đều có thể tùy chỉnh và mở rộng một cách dễ dàng.
+* Tất cả các ScriptableObject này sẽ được thiết kế sao cho có thể dễ dàng mở rộng trong tương lai nếu cần thêm các loại dữ liệu mới hoặc các thuộc tính mới mà không cần phải thay đổi cấu trúc cơ bản của hệ thống.
+* Các dữ liệu không được dính vào với nhau, có thể tái sử dụng và không có sự phụ thuộc lẫn nhau, giúp tăng tính modular và dễ bảo trì của hệ thống.
+* Hiện tại , tôi chỉ cần tập trung vào việc tạo ra các ScriptableObject cơ bản và chưa cần hệ thống Save Load, nhưng hệ thống này sẽ được thiết kế sao cho có thể dễ dàng tích hợp với hệ thống Save Load trong tương lai nếu cần thiết. 
+2. UI: 
+- Toàn bộ các vật phẩm, ảnh, object trên game đều là UI. Toàn bộ các thao tác đều là tương tác với UI (chạm, kéo thả, hover...).
+- Các animation trong Game sẽ đều sử dụng DOTween để tạo hiệu ứng mượt mà và chuyên nghiệp cho các tương tác UI, như di chuyển, phóng to, thu nhỏ, thay đổi màu sắc, v.v.
+3. Yêu cầu kỹ thuật khác:
+- Hệ thống phải được thiết kế sao cho dễ dàng mở rộng và bảo trì trong tương lai, với khả năng thêm mới các loại dữ liệu hoặc các thuộc tính mới mà không cần phải thay đổi cấu trúc cơ bản của hệ thống.
+- Namespace Luzart
+- Sử dụng các best practices trong thiết kế phần mềm, như SOLID principles và Design Pattern, để đảm bảo rằng hệ thống được xây dựng một cách có tổ chức, dễ hiểu và dễ bảo trì.
+
+4. Yêu cầu Output:
+
+Hãy viết các Script C# cần thiết (ngắn gọn, tối ưu).
+
+Hướng dẫn tôi cách thiết lập Hierarchy trong Unity (Cần những UI Panel nào, Button nào).
+
+Hướng dẫn cách tôi có thể tự tạo file SO và kéo thả chúng để tạo ra các kịch bản khác nhau (ví dụ: Map có hội thoại, Map không có hội thoại).
