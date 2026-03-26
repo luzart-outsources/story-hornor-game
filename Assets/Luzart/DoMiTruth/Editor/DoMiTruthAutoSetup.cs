@@ -5,9 +5,11 @@ namespace Luzart.Editor
     using UnityEngine;
     using UnityEngine.UI;
     using UnityEngine.EventSystems;
+    using UnityEngine.Video;
     using TMPro;
     using System.IO;
     using System.Collections.Generic;
+    using System.Linq;
     using static Luzart.SelectSwitchGameObject;
 
     public static class DoMiTruthAutoSetup
@@ -16,6 +18,10 @@ namespace Luzart.Editor
         const string BASE = "Assets/Luzart/DoMiTruth";
         const string DATA = BASE + "/Data";
         const string PREFABS = BASE + "/Prefabs";
+
+        // Reference resolution
+        const float REF_W = 1080f;
+        const float REF_H = 1920f;
 
         static readonly string[] DataDirs = {
             DATA + "/Config", DATA + "/Events", DATA + "/Characters",
@@ -61,18 +67,11 @@ namespace Luzart.Editor
         public static void CreateCoreAssets()
         {
             EnsureAllDirectories();
-
-            // UIRegistry
             CreateSOIfNotExist<UIRegistrySO>(DATA + "/Config/UIRegistry.asset");
-
-            // GameConfig
             CreateSOIfNotExist<GameConfigSO>(DATA + "/Config/GameConfig.asset");
-
-            // SO Events
             CreateSOIfNotExist<StringEventChannel>(DATA + "/Events/OnClueCollected.asset");
             CreateSOIfNotExist<GameEventChannel>(DATA + "/Events/OnNotebookUpdated.asset");
             CreateSOIfNotExist<GameEventChannel>(DATA + "/Events/OnSettingsChanged.asset");
-
             AssetDatabase.SaveAssets();
             Debug.Log("[DoMiTruth] Core assets created.");
         }
@@ -81,7 +80,7 @@ namespace Luzart.Editor
         {
             EnsureAllDirectories();
 
-            // Component prefabs first (referenced by screens)
+            // Components first (referenced by screens)
             CreateInteractablePrefab();
             CreateMapSelectionItemPrefab();
             CreateNotebookClueItemPrefab();
@@ -129,13 +128,11 @@ namespace Luzart.Editor
 
         public static void SetupScene()
         {
-            // Check if already setup
             if (Object.FindFirstObjectByType<UIManager>() != null)
             {
-                if (!EditorUtility.DisplayDialog("DoMiTruth", "UIManager already exists in scene. Recreate?", "Yes", "Cancel"))
+                if (!EditorUtility.DisplayDialog("DoMiTruth", "UIManager already exists. Recreate?", "Yes", "Cancel"))
                     return;
             }
-
             CreateSceneHierarchy();
             AssetDatabase.SaveAssets();
             Debug.Log("[DoMiTruth] Scene setup complete.");
@@ -145,6 +142,7 @@ namespace Luzart.Editor
         {
             WireUIRegistry();
             WireManagerReferences();
+            WirePrefabSOEvents();
             AssetDatabase.SaveAssets();
             Debug.Log("[DoMiTruth] All references wired.");
         }
@@ -163,13 +161,11 @@ namespace Luzart.Editor
         {
             int issues = 0;
 
-            // Check core assets
             if (LoadAsset<UIRegistrySO>(DATA + "/Config/UIRegistry.asset") == null)
             { Debug.LogError("[Validate] UIRegistry.asset missing"); issues++; }
             if (LoadAsset<GameConfigSO>(DATA + "/Config/GameConfig.asset") == null)
             { Debug.LogError("[Validate] GameConfig.asset missing"); issues++; }
 
-            // Check prefabs
             string[] requiredPrefabs = {
                 PREFABS + "/Screens/UIMainMenu.prefab",
                 PREFABS + "/Screens/UIInvestigation.prefab",
@@ -183,16 +179,528 @@ namespace Luzart.Editor
                 { Debug.LogError($"[Validate] Prefab missing: {p}"); issues++; }
             }
 
-            // Check scene
             if (Object.FindFirstObjectByType<UIManager>() == null)
             { Debug.LogError("[Validate] UIManager not in scene"); issues++; }
             if (Object.FindFirstObjectByType<GameFlowController>() == null)
             { Debug.LogError("[Validate] GameFlowController not in scene"); issues++; }
+            if (Object.FindFirstObjectByType<Camera>() == null)
+            { Debug.LogError("[Validate] No Camera in scene"); issues++; }
+
+            // Check registry entries
+            var reg = LoadAsset<UIRegistrySO>(DATA + "/Config/UIRegistry.asset");
+            if (reg != null)
+            {
+                var so = new SerializedObject(reg);
+                var entries = so.FindProperty("entries");
+                if (entries.arraySize == 0)
+                { Debug.LogError("[Validate] UIRegistry has 0 entries"); issues++; }
+                else
+                    Debug.Log($"[Validate] UIRegistry has {entries.arraySize} entries");
+            }
 
             if (issues == 0)
                 Debug.Log("[Validate] All checks passed!");
             else
                 Debug.LogWarning($"[Validate] {issues} issue(s) found.");
+        }
+        #endregion
+
+        #region Scene Setup
+        static void CreateSceneHierarchy()
+        {
+            // --- Destroy existing setup ---
+            var existingUIManager = Object.FindFirstObjectByType<UIManager>();
+            if (existingUIManager != null)
+                Object.DestroyImmediate(existingUIManager.transform.root.gameObject);
+
+            var existingManagers = GameObject.Find("--- Managers ---");
+            if (existingManagers != null) Object.DestroyImmediate(existingManagers);
+
+            var existingBootstrap = Object.FindFirstObjectByType<GameBootstrap>();
+            if (existingBootstrap != null) Object.DestroyImmediate(existingBootstrap.gameObject);
+
+            // --- Main Camera ---
+            if (Object.FindFirstObjectByType<Camera>() == null)
+            {
+                var camGo = new GameObject("Main Camera");
+                camGo.tag = "MainCamera";
+                var cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = Color.black;
+                cam.orthographic = true;
+                cam.orthographicSize = 5;
+                camGo.AddComponent<AudioListener>();
+            }
+
+            // --- EventSystem ---
+            if (Object.FindFirstObjectByType<EventSystem>() == null)
+            {
+                var esGo = new GameObject("EventSystem");
+                esGo.AddComponent<EventSystem>();
+                esGo.AddComponent<StandaloneInputModule>();
+            }
+
+            // --- Canvas ---
+            var canvasGo = new GameObject("Canvas");
+            var canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 0;
+
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(REF_W, REF_H);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var raycaster = canvasGo.AddComponent<GraphicRaycaster>();
+
+            // --- Layer roots (children of Canvas) ---
+            string[] layerNames = { "Layer_Screen", "Layer_Popup", "Layer_HUD", "Layer_System", "Layer_Toast" };
+            Transform[] layers = new Transform[layerNames.Length];
+            for (int i = 0; i < layerNames.Length; i++)
+            {
+                var lg = new GameObject(layerNames[i], typeof(RectTransform));
+                lg.transform.SetParent(canvasGo.transform, false);
+                StretchFill(lg.GetComponent<RectTransform>());
+                layers[i] = lg.transform;
+            }
+
+            // --- UIManager (on Canvas) ---
+            var uiManager = canvasGo.AddComponent<UIManager>();
+            uiManager.canvas = canvas;
+            uiManager.graphicRaycaster = raycaster;
+
+            var uiSo = new SerializedObject(uiManager);
+
+            // Wire rootOb array
+            var rootObProp = uiSo.FindProperty("rootOb");
+            rootObProp.arraySize = layers.Length;
+            for (int i = 0; i < layers.Length; i++)
+                rootObProp.GetArrayElementAtIndex(i).objectReferenceValue = layers[i];
+
+            // Wire registry
+            uiSo.FindProperty("registry").objectReferenceValue =
+                LoadAsset<UIRegistrySO>(DATA + "/Config/UIRegistry.asset");
+
+            // Wire listSceneCache as empty array
+            var cacheProp = uiSo.FindProperty("listSceneCache");
+            cacheProp.arraySize = 0;
+
+            uiSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // --- Managers ---
+            var managersGo = new GameObject("--- Managers ---");
+
+            CreateManagerInScene<GameDataManager>(managersGo.transform, "GameDataManager", mgr =>
+            {
+                var s = new SerializedObject(mgr);
+                s.FindProperty("onClueCollected").objectReferenceValue =
+                    LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset");
+                s.FindProperty("onNotebookUpdated").objectReferenceValue =
+                    LoadAsset<GameEventChannel>(DATA + "/Events/OnNotebookUpdated.asset");
+                s.ApplyModifiedPropertiesWithoutUndo();
+            });
+
+            CreateManagerInScene<GameFlowController>(managersGo.transform, "GameFlowController", mgr =>
+            {
+                var s = new SerializedObject(mgr);
+                s.FindProperty("gameConfig").objectReferenceValue =
+                    LoadAsset<GameConfigSO>(DATA + "/Config/GameConfig.asset");
+                s.ApplyModifiedPropertiesWithoutUndo();
+            });
+
+            CreateManagerInScene<DialogueManager>(managersGo.transform, "DialogueManager");
+            CreateManagerInScene<InvestigationManager>(managersGo.transform, "InvestigationManager");
+
+            CreateManagerInScene<NotebookManager>(managersGo.transform, "NotebookManager", mgr =>
+            {
+                var s = new SerializedObject(mgr);
+                // allClues
+                var clueGuids = AssetDatabase.FindAssets("t:ClueSO", new[] { DATA + "/Clues" });
+                var allCluesProp = s.FindProperty("allClues");
+                allCluesProp.arraySize = clueGuids.Length;
+                for (int i = 0; i < clueGuids.Length; i++)
+                {
+                    allCluesProp.GetArrayElementAtIndex(i).objectReferenceValue =
+                        AssetDatabase.LoadAssetAtPath<ClueSO>(AssetDatabase.GUIDToAssetPath(clueGuids[i]));
+                }
+                // allCharacters
+                var charGuids = AssetDatabase.FindAssets("t:DialogueCharacterSO", new[] { DATA + "/Characters" });
+                var allCharsProp = s.FindProperty("allCharacters");
+                allCharsProp.arraySize = charGuids.Length;
+                for (int i = 0; i < charGuids.Length; i++)
+                {
+                    allCharsProp.GetArrayElementAtIndex(i).objectReferenceValue =
+                        AssetDatabase.LoadAssetAtPath<DialogueCharacterSO>(AssetDatabase.GUIDToAssetPath(charGuids[i]));
+                }
+                s.FindProperty("onClueCollected").objectReferenceValue =
+                    LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset");
+                s.ApplyModifiedPropertiesWithoutUndo();
+            });
+
+            // --- Bootstrap ---
+            var bootstrapGo = new GameObject("GameBootstrap");
+            bootstrapGo.AddComponent<GameBootstrap>();
+
+            EditorUtility.SetDirty(canvasGo);
+        }
+
+        static T CreateManagerInScene<T>(Transform parent, string name, System.Action<T> configure = null) where T : MonoBehaviour
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var comp = go.AddComponent<T>();
+            configure?.Invoke(comp);
+            return comp;
+        }
+        #endregion
+
+        #region Helpers - UI Building
+        static GameObject CreateUIRoot(string name, Vector2 size, bool stretch)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            var rt = go.GetComponent<RectTransform>();
+            if (stretch)
+            {
+                StretchFill(rt);
+            }
+            else
+            {
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = size;
+                rt.anchoredPosition = Vector2.zero;
+            }
+            return go;
+        }
+
+        static void StretchFill(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = Vector2.zero;
+        }
+
+        /// <summary>
+        /// Set anchors relative to parent and zero out offsets
+        /// </summary>
+        static void SetAnchors(RectTransform rt, float minX, float minY, float maxX, float maxY)
+        {
+            rt.anchorMin = new Vector2(minX, minY);
+            rt.anchorMax = new Vector2(maxX, maxY);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>
+        /// Set anchor to a single point + explicit size
+        /// </summary>
+        static void SetAnchorPoint(RectTransform rt, float anchorX, float anchorY, Vector2 size, Vector2 pos)
+        {
+            rt.anchorMin = new Vector2(anchorX, anchorY);
+            rt.anchorMax = new Vector2(anchorX, anchorY);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = size;
+            rt.anchoredPosition = pos;
+        }
+
+        static (GameObject go, Button btn, TMP_Text text) CreateButton(Transform parent, string name, string label, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(parent, false);
+            go.GetComponent<RectTransform>().sizeDelta = size;
+            go.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.3f, 1f);
+
+            var textGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            textGo.transform.SetParent(go.transform, false);
+            StretchFill(textGo.GetComponent<RectTransform>());
+
+            var text = textGo.GetComponent<TextMeshProUGUI>();
+            text.text = label;
+            text.fontSize = 20;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = Color.white;
+
+            return (go, go.GetComponent<Button>(), text);
+        }
+
+        /// <summary>
+        /// Create button inside a LayoutGroup with proper LayoutElement height
+        /// </summary>
+        static (GameObject go, Button btn, TMP_Text text) CreateLayoutButton(Transform parent, string name, string label, float height)
+        {
+            var result = CreateButton(parent, name, label, new Vector2(0, height));
+            var le = result.go.AddComponent<LayoutElement>();
+            le.preferredHeight = height;
+            le.flexibleWidth = 1;
+            result.go.AddComponent<EffectButton>();
+            return result;
+        }
+
+        static (GameObject go, TMP_Text text) CreateText(Transform parent, string name, string defaultText, int fontSize = 24)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
+            go.transform.SetParent(parent, false);
+            var text = go.GetComponent<TextMeshProUGUI>();
+            text.text = defaultText;
+            text.fontSize = fontSize;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = Color.white;
+            return (go, text);
+        }
+
+        static (GameObject go, Image img) CreateImage(Transform parent, string name, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            go.GetComponent<RectTransform>().sizeDelta = size;
+            go.GetComponent<Image>().color = Color.gray;
+            return (go, go.GetComponent<Image>());
+        }
+
+        static Button CreateCloseButton(Transform parent)
+        {
+            var (go, btn, text) = CreateButton(parent, "BtnClose", "X", new Vector2(50, 50));
+            go.AddComponent<EffectButton>();
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(1, 1);
+            rt.anchoredPosition = new Vector2(-10, -10);
+            go.GetComponent<Image>().color = new Color(0.5f, 0.1f, 0.1f);
+            return btn;
+        }
+
+        static GameObject CreatePopupPanel(Transform parent, string name, float width, float height)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(width, height);
+            rt.anchoredPosition = Vector2.zero;
+            go.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 1f);
+
+            var vl = go.GetComponent<VerticalLayoutGroup>();
+            vl.spacing = 10;
+            vl.padding = new RectOffset(20, 20, 20, 20);
+            vl.childAlignment = TextAnchor.UpperCenter;
+            vl.childForceExpandWidth = true;
+            vl.childForceExpandHeight = false;
+
+            return go;
+        }
+
+        static GameObject CreateScrollView(Transform parent, string name, bool stretch = false)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(ScrollRect));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            if (stretch) StretchFill(rt);
+
+            // Viewport
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
+            viewport.transform.SetParent(go.transform, false);
+            StretchFill(viewport.GetComponent<RectTransform>());
+            viewport.GetComponent<Image>().color = new Color(1, 1, 1, 0.01f);
+            viewport.GetComponent<Mask>().showMaskGraphic = false;
+
+            // Content
+            var content = new GameObject("Content", typeof(RectTransform));
+            content.transform.SetParent(viewport.transform, false);
+            var crt = content.GetComponent<RectTransform>();
+            crt.anchorMin = new Vector2(0, 1);
+            crt.anchorMax = new Vector2(1, 1);
+            crt.pivot = new Vector2(0.5f, 1);
+            crt.offsetMin = new Vector2(0, 0);
+            crt.offsetMax = new Vector2(0, 0);
+            crt.sizeDelta = new Vector2(0, 0);
+
+            var scrollRect = go.GetComponent<ScrollRect>();
+            scrollRect.viewport = viewport.GetComponent<RectTransform>();
+            scrollRect.content = crt;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+
+            return go;
+        }
+
+        static Slider CreateSlider(Transform parent, string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Slider));
+            go.transform.SetParent(parent, false);
+            go.AddComponent<LayoutElement>().preferredHeight = 30;
+
+            var bg = new GameObject("Background", typeof(RectTransform), typeof(Image));
+            bg.transform.SetParent(go.transform, false);
+            StretchFill(bg.GetComponent<RectTransform>());
+            bg.GetComponent<Image>().color = new Color(0.3f, 0.3f, 0.3f);
+
+            var fillArea = new GameObject("Fill Area", typeof(RectTransform));
+            fillArea.transform.SetParent(go.transform, false);
+            var fart = fillArea.GetComponent<RectTransform>();
+            fart.anchorMin = new Vector2(0, 0.25f);
+            fart.anchorMax = new Vector2(1, 0.75f);
+            fart.offsetMin = Vector2.zero;
+            fart.offsetMax = Vector2.zero;
+
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(fillArea.transform, false);
+            StretchFill(fill.GetComponent<RectTransform>());
+            fill.GetComponent<Image>().color = new Color(0.3f, 0.6f, 1f);
+
+            var handleArea = new GameObject("Handle Slide Area", typeof(RectTransform));
+            handleArea.transform.SetParent(go.transform, false);
+            StretchFill(handleArea.GetComponent<RectTransform>());
+
+            var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handle.transform.SetParent(handleArea.transform, false);
+            handle.GetComponent<RectTransform>().sizeDelta = new Vector2(20, 0);
+            handle.GetComponent<Image>().color = Color.white;
+
+            var slider = go.GetComponent<Slider>();
+            slider.fillRect = fill.GetComponent<RectTransform>();
+            slider.handleRect = handle.GetComponent<RectTransform>();
+            slider.targetGraphic = handle.GetComponent<Image>();
+            slider.value = 1f;
+
+            return slider;
+        }
+
+        static void AddShowAnimation(GameObject root)
+        {
+            var tweenAnim = root.AddComponent<TweenAnimation>();
+            var caller = root.AddComponent<TweenAnimationCaller>();
+
+            // Configure caller
+            var callerSo = new SerializedObject(caller);
+            callerSo.FindProperty("tweenAnimation").objectReferenceValue = tweenAnim;
+            callerSo.FindProperty("typeShow").enumValueIndex = (int)ETypeShow.None; // None=0, index 0
+            callerSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Configure TweenAnimation for Scale
+            var animSo = new SerializedObject(tweenAnim);
+            // EAnimation.Scale = 5, but enumValueIndex is declaration order
+            // Move=0,MoveLocal=1,MoveAnchors=2,Float=3,Euler=4,Scale=5 → index 5
+            animSo.FindProperty("typeAnimation").enumValueIndex = 5;
+
+            var settingsProp = animSo.FindProperty("tweenAnimationSettings");
+            settingsProp.FindPropertyRelative("General.Target").objectReferenceValue = root;
+            settingsProp.FindPropertyRelative("General.Duration").floatValue = 0.25f;
+            // Ease.OutBack = 27
+            settingsProp.FindPropertyRelative("General.Easing").intValue = 27;
+
+            settingsProp.FindPropertyRelative("Values.Vector3From").vector3Value = new Vector3(0.85f, 0.85f, 1f);
+            settingsProp.FindPropertyRelative("Values.Vector3To").vector3Value = Vector3.one;
+            animSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // Wire caller to UIBase.showAnimation
+            var uiBase = root.GetComponent<UIBase>();
+            if (uiBase != null)
+            {
+                var uiSo = new SerializedObject(uiBase);
+                uiSo.FindProperty("showAnimation").objectReferenceValue = caller;
+                uiSo.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+        #endregion
+
+        #region Helpers - Asset Management
+        static void EnsureAllDirectories()
+        {
+            foreach (var d in DataDirs) EnsureDirectory(d);
+            foreach (var d in PrefabDirs) EnsureDirectory(d);
+        }
+
+        static void EnsureDirectory(string path)
+        {
+            if (AssetDatabase.IsValidFolder(path)) return;
+            string parent = Path.GetDirectoryName(path).Replace("\\", "/");
+            string folder = Path.GetFileName(path);
+            if (!AssetDatabase.IsValidFolder(parent))
+                EnsureDirectory(parent);
+            AssetDatabase.CreateFolder(parent, folder);
+        }
+
+        static T CreateSOIfNotExist<T>(string path) where T : ScriptableObject
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (existing != null) return existing;
+            var so = ScriptableObject.CreateInstance<T>();
+            AssetDatabase.CreateAsset(so, path);
+            return so;
+        }
+
+        static T LoadAsset<T>(string path) where T : Object
+        {
+            return AssetDatabase.LoadAssetAtPath<T>(path);
+        }
+
+        static bool Exists(string path)
+        {
+            return AssetDatabase.LoadAssetAtPath<Object>(path) != null;
+        }
+
+        static void SavePrefab(GameObject root, string path)
+        {
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+        }
+
+        /// <summary>
+        /// Wire a serialized field by name using SerializedObject
+        /// </summary>
+        static void WireField(Object target, string fieldName, Object value)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(fieldName);
+            if (prop != null)
+            {
+                prop.objectReferenceValue = value;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+            else
+            {
+                Debug.LogWarning($"[Wire] Field '{fieldName}' not found on {target.GetType().Name}");
+            }
+        }
+
+        /// <summary>
+        /// Get the correct enumValueIndex for a UIName value.
+        /// enumValueIndex = declaration order index, NOT the raw int value.
+        /// </summary>
+        static int GetUINameEnumIndex(UIName name)
+        {
+            // UIName enum declaration order:
+            // 0: None=0, 1: Toast=1, 2: Loading=2,
+            // 3: MainMenu=10, 4: Cutscene=11, 5: NPCDialogue=12,
+            // 6: MapSelection=13, 7: Investigation=14, 8: Notebook=15,
+            // 9: Settings=20, 10: Guide=21, 11: ClueDetail=22,
+            // 12: LockPuzzle=23, 13: ConfirmExit=24, 14: InvestigationHud=30
+            switch (name)
+            {
+                case UIName.None: return 0;
+                case UIName.Toast: return 1;
+                case UIName.Loading: return 2;
+                case UIName.MainMenu: return 3;
+                case UIName.Cutscene: return 4;
+                case UIName.NPCDialogue: return 5;
+                case UIName.MapSelection: return 6;
+                case UIName.Investigation: return 7;
+                case UIName.Notebook: return 8;
+                case UIName.Settings: return 9;
+                case UIName.Guide: return 10;
+                case UIName.ClueDetail: return 11;
+                case UIName.LockPuzzle: return 12;
+                case UIName.ConfirmExit: return 13;
+                case UIName.InvestigationHud: return 14;
+                default: return 0;
+            }
         }
         #endregion
 
@@ -203,15 +711,15 @@ namespace Luzart.Editor
             if (Exists(path)) return;
 
             var root = CreateUIRoot("InteractableObject", new Vector2(100, 100), false);
-            root.AddComponent<Image>().color = new Color(1, 1, 1, 0.01f); // nearly transparent hitbox
-            root.AddComponent<InteractableObject>();
+            root.AddComponent<Image>().color = new Color(1, 1, 1, 0.01f);
+            var comp = root.AddComponent<InteractableObject>();
 
             var highlight = CreateImage(root.transform, "Highlight", new Vector2(100, 100));
             highlight.img.color = new Color(1, 1, 0, 0.3f);
             highlight.go.SetActive(false);
 
-            WireField(root.GetComponent<InteractableObject>(), "imgHighlight", highlight.img);
-            WireField(root.GetComponent<InteractableObject>(), "rectTransform", root.GetComponent<RectTransform>());
+            WireField(comp, "imgHighlight", highlight.img);
+            WireField(comp, "rectTransform", root.GetComponent<RectTransform>());
 
             SavePrefab(root, path);
         }
@@ -221,18 +729,24 @@ namespace Luzart.Editor
             string path = PREFABS + "/Components/MapSelectionItem.prefab";
             if (Exists(path)) return;
 
-            var root = CreateUIRoot("MapSelectionItem", new Vector2(300, 200), false);
+            var root = CreateUIRoot("MapSelectionItem", new Vector2(300, 220), false);
             var layout = root.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 5; layout.padding = new RectOffset(10, 10, 10, 10);
+            layout.spacing = 5;
+            layout.padding = new RectOffset(10, 10, 10, 10);
             layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
             root.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.2f, 1f);
 
             var comp = root.AddComponent<MapSelectionItem>();
 
-            var thumb = CreateImage(root.transform, "ImgThumbnail", new Vector2(280, 120));
+            var thumb = CreateImage(root.transform, "ImgThumbnail", new Vector2(280, 130));
+            thumb.go.AddComponent<LayoutElement>().preferredHeight = 130;
+
             var txtName = CreateText(root.transform, "TxtName", "Map Name", 20);
-            var btn = CreateButton(root.transform, "BtnSelect", "SELECT", new Vector2(280, 40));
+            txtName.go.AddComponent<LayoutElement>().preferredHeight = 30;
+
+            var btn = CreateLayoutButton(root.transform, "BtnSelect", "SELECT", 40);
 
             WireField(comp, "imgThumbnail", thumb.img);
             WireField(comp, "txtName", txtName.text);
@@ -247,21 +761,35 @@ namespace Luzart.Editor
             if (Exists(path)) return;
 
             var root = CreateUIRoot("NotebookClueItem", new Vector2(0, 80), false);
-            root.GetComponent<RectTransform>().anchorMin = new Vector2(0, 1);
-            root.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
+            var rt = root.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(0.5f, 1);
+
             var hl = root.AddComponent<HorizontalLayoutGroup>();
-            hl.spacing = 10; hl.padding = new RectOffset(10, 10, 5, 5);
-            hl.childForceExpandWidth = false; hl.childForceExpandHeight = true;
+            hl.spacing = 10;
+            hl.padding = new RectOffset(10, 10, 5, 5);
+            hl.childForceExpandWidth = false;
+            hl.childForceExpandHeight = true;
+            hl.childAlignment = TextAnchor.MiddleLeft;
             root.AddComponent<Image>().color = new Color(0.12f, 0.12f, 0.18f, 1f);
 
             var comp = root.AddComponent<NotebookClueItem>();
 
             var img = CreateImage(root.transform, "ImgClue", new Vector2(60, 60));
+            img.go.AddComponent<LayoutElement>().preferredWidth = 60;
+
             var txtN = CreateText(root.transform, "TxtName", "Clue", 18);
             txtN.text.alignment = TextAlignmentOptions.Left;
+            txtN.go.AddComponent<LayoutElement>().flexibleWidth = 1;
+
             var txtC = CreateText(root.transform, "TxtCategory", "Physical", 14);
             txtC.text.color = Color.gray;
+            txtC.go.AddComponent<LayoutElement>().preferredWidth = 80;
+
             var btnD = CreateButton(root.transform, "BtnDetail", "?", new Vector2(40, 40));
+            btnD.go.AddComponent<LayoutElement>().preferredWidth = 40;
+            btnD.go.AddComponent<EffectButton>();
 
             WireField(comp, "imgClue", img.img);
             WireField(comp, "txtName", txtN.text);
@@ -277,16 +805,27 @@ namespace Luzart.Editor
             if (Exists(path)) return;
 
             var root = CreateUIRoot("NotebookCharacterItem", new Vector2(0, 80), false);
-            root.GetComponent<RectTransform>().anchorMin = new Vector2(0, 1);
-            root.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
+            var rt = root.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(0.5f, 1);
+
             var hl = root.AddComponent<HorizontalLayoutGroup>();
-            hl.spacing = 10; hl.padding = new RectOffset(10, 10, 5, 5);
+            hl.spacing = 10;
+            hl.padding = new RectOffset(10, 10, 5, 5);
+            hl.childForceExpandWidth = false;
+            hl.childForceExpandHeight = true;
+            hl.childAlignment = TextAnchor.MiddleLeft;
             root.AddComponent<Image>().color = new Color(0.12f, 0.12f, 0.18f, 1f);
 
             var comp = root.AddComponent<NotebookCharacterItem>();
 
             var img = CreateImage(root.transform, "ImgPortrait", new Vector2(60, 60));
+            img.go.AddComponent<LayoutElement>().preferredWidth = 60;
+
             var txtN = CreateText(root.transform, "TxtName", "Character", 20);
+            txtN.text.alignment = TextAlignmentOptions.Left;
+            txtN.go.AddComponent<LayoutElement>().flexibleWidth = 1;
 
             WireField(comp, "imgPortrait", img.img);
             WireField(comp, "txtName", txtN.text);
@@ -307,16 +846,19 @@ namespace Luzart.Editor
             toast.uiName = UIName.Toast;
             toast.isCache = true;
 
-            var bg = CreateImage(root.transform, "Bg", new Vector2(400, 60));
-            bg.img.color = new Color(0, 0, 0, 0.8f);
-            bg.go.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0.2f);
-            bg.go.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0.2f);
+            // Toast background - bottom center
+            var bg = CreateImage(root.transform, "Bg", new Vector2(600, 70));
+            SetAnchorPoint(bg.go.GetComponent<RectTransform>(), 0.5f, 0.15f, new Vector2(600, 70), Vector2.zero);
+            bg.img.color = new Color(0, 0, 0, 0.85f);
 
-            var txt = CreateText(bg.go.transform, "TxtNoti", "Toast Message", 18);
+            var txt = CreateText(bg.go.transform, "TxtNoti", "Toast Message", 20);
             StretchFill(txt.go.GetComponent<RectTransform>());
 
-            toast.canvasGroup = root.GetComponent<CanvasGroup>();
-            toast.txtNoti = txt.text;
+            // UIToast has public fields, use SerializedObject to be safe for prefab
+            var so = new SerializedObject(toast);
+            so.FindProperty("canvasGroup").objectReferenceValue = root.GetComponent<CanvasGroup>();
+            so.FindProperty("txtNoti").objectReferenceValue = txt.text;
+            so.ApplyModifiedPropertiesWithoutUndo();
 
             SavePrefab(root, path);
         }
@@ -327,16 +869,13 @@ namespace Luzart.Editor
             if (Exists(path)) return;
 
             var root = CreateUIRoot("UILoading", Vector2.zero, true);
-            var bg = root.AddComponent<Image>();
-            bg.color = new Color(0, 0, 0, 0.7f);
+            root.AddComponent<Image>().color = new Color(0, 0, 0, 0.7f);
             var uiBase = root.AddComponent<UIBase>();
             uiBase.uiName = UIName.Loading;
             uiBase.isCache = true;
 
-            var txt = CreateText(root.transform, "TxtLoading", "Loading...", 28);
-            txt.go.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 0.5f);
-            txt.go.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 0.5f);
-            txt.go.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 50);
+            var txt = CreateText(root.transform, "TxtLoading", "Loading...", 32);
+            SetAnchorPoint(txt.go.GetComponent<RectTransform>(), 0.5f, 0.5f, new Vector2(400, 60), Vector2.zero);
 
             SavePrefab(root, path);
         }
@@ -354,34 +893,36 @@ namespace Luzart.Editor
             comp.uiName = UIName.MainMenu;
             comp.isCache = true;
 
-            // Content container
+            // Content container - center area
             var content = new GameObject("Content", typeof(RectTransform));
             content.transform.SetParent(root.transform, false);
             var crt = content.GetComponent<RectTransform>();
-            crt.anchorMin = new Vector2(0.3f, 0.2f); crt.anchorMax = new Vector2(0.7f, 0.7f);
-            crt.sizeDelta = Vector2.zero;
+            SetAnchors(crt, 0.15f, 0.25f, 0.85f, 0.75f);
+
             var vl = content.AddComponent<VerticalLayoutGroup>();
-            vl.spacing = 15; vl.childAlignment = TextAnchor.MiddleCenter;
-            vl.childForceExpandWidth = true; vl.childForceExpandHeight = false;
+            vl.spacing = 20;
+            vl.childAlignment = TextAnchor.MiddleCenter;
+            vl.childForceExpandWidth = true;
+            vl.childForceExpandHeight = false;
 
             // Title
-            var title = CreateText(content.transform, "Title", "DO MI TRUTH", 42);
+            var title = CreateText(content.transform, "Title", "DO-MI TRUTH", 48);
             title.text.fontStyle = FontStyles.Bold;
-            title.go.AddComponent<LayoutElement>().preferredHeight = 60;
+            title.go.AddComponent<LayoutElement>().preferredHeight = 80;
+
+            // Spacer
+            var spacer = new GameObject("Spacer", typeof(RectTransform));
+            spacer.transform.SetParent(content.transform, false);
+            spacer.AddComponent<LayoutElement>().preferredHeight = 30;
 
             // Buttons
-            var btnPlay = CreateButton(content.transform, "BtnPlay", "NEW GAME", new Vector2(0, 50));
-            btnPlay.go.AddComponent<EffectButton>();
-            var btnCont = CreateButton(content.transform, "BtnContinue", "CONTINUE", new Vector2(0, 50));
-            btnCont.go.AddComponent<EffectButton>();
-            var btnSet = CreateButton(content.transform, "BtnSettings", "SETTINGS", new Vector2(0, 50));
-            btnSet.go.AddComponent<EffectButton>();
-            var btnGuide = CreateButton(content.transform, "BtnGuide", "GUIDE", new Vector2(0, 50));
-            btnGuide.go.AddComponent<EffectButton>();
-            var btnExit = CreateButton(content.transform, "BtnExit", "EXIT", new Vector2(0, 50));
-            btnExit.go.AddComponent<EffectButton>();
+            var btnPlay = CreateLayoutButton(content.transform, "BtnPlay", "NEW GAME", 60);
+            var btnCont = CreateLayoutButton(content.transform, "BtnContinue", "CONTINUE", 60);
+            var btnSet = CreateLayoutButton(content.transform, "BtnSettings", "SETTINGS", 60);
+            var btnGuide = CreateLayoutButton(content.transform, "BtnGuide", "GUIDE", 60);
+            var btnExit = CreateLayoutButton(content.transform, "BtnExit", "EXIT", 60);
 
-            // Continue toggle
+            // Continue toggle (visibility control)
             var contToggle = btnCont.go.AddComponent<SelectToggleGameObject>();
             contToggle.obSelect = new[] { btnCont.go };
             contToggle.obUnSelect = new GameObject[0];
@@ -408,22 +949,27 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UICutscene>();
             comp.uiName = UIName.Cutscene;
 
-            // RawImage for video
+            // VideoPlayer component on root
+            var videoPlayer = root.AddComponent<VideoPlayer>();
+            videoPlayer.playOnAwake = false;
+            videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+
+            // RawImage for video display
             var rawImgGo = new GameObject("VideoDisplay", typeof(RectTransform), typeof(RawImage));
             rawImgGo.transform.SetParent(root.transform, false);
             StretchFill(rawImgGo.GetComponent<RectTransform>());
 
-            // Skip button
-            var btnSkip = CreateButton(root.transform, "BtnSkip", "SKIP >>", new Vector2(150, 40));
+            // Skip button - bottom right
+            var btnSkip = CreateButton(root.transform, "BtnSkip", "SKIP >>", new Vector2(150, 50));
             var srt = btnSkip.go.GetComponent<RectTransform>();
-            srt.anchorMin = new Vector2(1, 0); srt.anchorMax = new Vector2(1, 0);
-            srt.anchoredPosition = new Vector2(-100, 50);
+            SetAnchorPoint(srt, 1f, 0f, new Vector2(150, 50), new Vector2(-90, 40));
             btnSkip.go.AddComponent<EffectButton>();
 
             var skipToggle = btnSkip.go.AddComponent<SelectToggleGameObject>();
             skipToggle.obSelect = new[] { btnSkip.go };
             skipToggle.obUnSelect = new GameObject[0];
 
+            WireField(comp, "videoPlayer", videoPlayer);
             WireField(comp, "videoDisplay", rawImgGo.GetComponent<RawImage>());
             WireField(comp, "btnSkip", btnSkip.btn);
             WireField(comp, "skipToggle", skipToggle);
@@ -441,40 +987,38 @@ namespace Luzart.Editor
             comp.uiName = UIName.NPCDialogue;
             comp.isCache = true;
 
-            // Dialogue panel at bottom
+            // Semi-transparent overlay (click to advance)
+            root.AddComponent<Image>().color = new Color(0, 0, 0, 0.3f);
+
+            // Dialogue panel at bottom 35% of screen
             var panel = new GameObject("DialoguePanel", typeof(RectTransform), typeof(Image));
             panel.transform.SetParent(root.transform, false);
             var prt = panel.GetComponent<RectTransform>();
-            prt.anchorMin = new Vector2(0, 0); prt.anchorMax = new Vector2(1, 0.35f);
-            prt.sizeDelta = Vector2.zero;
-            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+            SetAnchors(prt, 0f, 0f, 1f, 0.35f);
+            panel.GetComponent<Image>().color = new Color(0.02f, 0.02f, 0.05f, 0.92f);
 
-            // Portrait
-            var portrait = CreateImage(panel.transform, "ImgPortrait", new Vector2(120, 120));
+            // Portrait - left side
+            var portrait = CreateImage(panel.transform, "ImgPortrait", new Vector2(130, 130));
             var prrt = portrait.go.GetComponent<RectTransform>();
-            prrt.anchorMin = new Vector2(0, 0.5f); prrt.anchorMax = new Vector2(0, 0.5f);
-            prrt.anchoredPosition = new Vector2(80, 0);
+            SetAnchorPoint(prrt, 0f, 0.5f, new Vector2(130, 130), new Vector2(80, 0));
 
-            // Name
-            var txtName = CreateText(panel.transform, "TxtName", "Character Name", 22);
+            // Character Name - top area
+            var txtName = CreateText(panel.transform, "TxtName", "Character Name", 24);
             var nrt = txtName.go.GetComponent<RectTransform>();
-            nrt.anchorMin = new Vector2(0.15f, 0.75f); nrt.anchorMax = new Vector2(0.9f, 0.95f);
-            nrt.sizeDelta = Vector2.zero;
+            SetAnchors(nrt, 0.17f, 0.72f, 0.95f, 0.95f);
             txtName.text.alignment = TextAlignmentOptions.Left;
             txtName.text.fontStyle = FontStyles.Bold;
 
-            // Dialogue text
-            var txtDlg = CreateText(panel.transform, "TxtDialogue", "Dialogue text goes here...", 18);
+            // Dialogue text - middle area
+            var txtDlg = CreateText(panel.transform, "TxtDialogue", "Dialogue text goes here...", 20);
             var drt = txtDlg.go.GetComponent<RectTransform>();
-            drt.anchorMin = new Vector2(0.15f, 0.1f); drt.anchorMax = new Vector2(0.85f, 0.7f);
-            drt.sizeDelta = Vector2.zero;
+            SetAnchors(drt, 0.17f, 0.08f, 0.88f, 0.68f);
             txtDlg.text.alignment = TextAlignmentOptions.TopLeft;
 
-            // Next button
-            var btnNext = CreateButton(panel.transform, "BtnNext", ">>>", new Vector2(80, 40));
+            // Next button - bottom right of panel
+            var btnNext = CreateButton(panel.transform, "BtnNext", ">>>", new Vector2(80, 45));
             var bnrt = btnNext.go.GetComponent<RectTransform>();
-            bnrt.anchorMin = new Vector2(1, 0); bnrt.anchorMax = new Vector2(1, 0);
-            bnrt.anchoredPosition = new Vector2(-60, 30);
+            SetAnchorPoint(bnrt, 1f, 0f, new Vector2(80, 45), new Vector2(-55, 30));
             btnNext.go.AddComponent<EffectButton>();
 
             AddShowAnimation(root);
@@ -497,17 +1041,25 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UIMapSelection>();
             comp.uiName = UIName.MapSelection;
 
-            var title = CreateText(root.transform, "Title", "SELECT LOCATION", 30);
+            // Title - top
+            var title = CreateText(root.transform, "Title", "SELECT LOCATION", 32);
             var trt = title.go.GetComponent<RectTransform>();
-            trt.anchorMin = new Vector2(0.1f, 0.85f); trt.anchorMax = new Vector2(0.9f, 0.95f);
-            trt.sizeDelta = Vector2.zero;
+            SetAnchors(trt, 0.1f, 0.88f, 0.9f, 0.96f);
+            title.text.fontStyle = FontStyles.Bold;
 
-            // Scroll view
-            var scrollGo = CreateScrollView(root.transform, "MapGrid", new Vector4(0.05f, 0.1f, 0.95f, 0.8f));
+            // Scroll view with grid
+            var scrollGo = CreateScrollView(root.transform, "MapGrid");
+            var srt = scrollGo.GetComponent<RectTransform>();
+            SetAnchors(srt, 0.05f, 0.08f, 0.95f, 0.85f);
+
             var gridContent = scrollGo.transform.Find("Viewport/Content");
             var gl = gridContent.gameObject.AddComponent<GridLayoutGroup>();
-            gl.cellSize = new Vector2(300, 200); gl.spacing = new Vector2(20, 20);
+            gl.cellSize = new Vector2(300, 220);
+            gl.spacing = new Vector2(20, 20);
             gl.padding = new RectOffset(20, 20, 20, 20);
+            gl.childAlignment = TextAnchor.UpperCenter;
+            var csf = gridContent.gameObject.AddComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             // Close button
             var btnClose = CreateCloseButton(root.transform);
@@ -532,14 +1084,18 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UIInvestigation>();
             comp.uiName = UIName.Investigation;
 
-            // Background container (for panning)
+            // Background container (larger than screen for panning)
             var bgGo = new GameObject("Background", typeof(RectTransform), typeof(Image));
             bgGo.transform.SetParent(root.transform, false);
             var bgrt = bgGo.GetComponent<RectTransform>();
+            bgrt.anchorMin = new Vector2(0.5f, 0.5f);
+            bgrt.anchorMax = new Vector2(0.5f, 0.5f);
+            bgrt.pivot = new Vector2(0.5f, 0.5f);
             bgrt.sizeDelta = new Vector2(2560, 1440);
+            bgrt.anchoredPosition = Vector2.zero;
             bgGo.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f);
 
-            // Interactable container (child of background for panning together)
+            // Interactable container (child of background, moves with pan)
             var interContainer = new GameObject("InteractableContainer", typeof(RectTransform));
             interContainer.transform.SetParent(bgGo.transform, false);
             StretchFill(interContainer.GetComponent<RectTransform>());
@@ -572,40 +1128,50 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UINotebook>();
             comp.uiName = UIName.Notebook;
 
-            // Tab bar
+            // Tab bar - top area
             var tabBar = new GameObject("TabBar", typeof(RectTransform), typeof(HorizontalLayoutGroup));
             tabBar.transform.SetParent(root.transform, false);
             var tbrt = tabBar.GetComponent<RectTransform>();
-            tbrt.anchorMin = new Vector2(0.1f, 0.88f); tbrt.anchorMax = new Vector2(0.9f, 0.95f);
-            tbrt.sizeDelta = Vector2.zero;
+            SetAnchors(tbrt, 0.05f, 0.90f, 0.95f, 0.97f);
             var tbl = tabBar.GetComponent<HorizontalLayoutGroup>();
-            tbl.spacing = 10; tbl.childForceExpandWidth = true;
+            tbl.spacing = 10;
+            tbl.childForceExpandWidth = true;
+            tbl.childForceExpandHeight = true;
 
-            var btnClues = CreateButton(tabBar.transform, "BtnCluesTab", "CLUES", new Vector2(0, 40));
-            var btnChars = CreateButton(tabBar.transform, "BtnCharactersTab", "CHARACTERS", new Vector2(0, 40));
+            var btnClues = CreateButton(tabBar.transform, "BtnCluesTab", "CLUES", Vector2.zero);
+            btnClues.go.AddComponent<EffectButton>();
+            var btnChars = CreateButton(tabBar.transform, "BtnCharactersTab", "CHARACTERS", Vector2.zero);
+            btnChars.go.AddComponent<EffectButton>();
 
-            // Tab content (SwitchGroup)
+            // Tab toggle images for visual active state
+            var clueTabToggle = btnClues.go.AddComponent<SelectToggleImage>();
+            var charTabToggle = btnChars.go.AddComponent<SelectToggleImage>();
+
+            // Tab content area
             var tabContent = new GameObject("TabContent", typeof(RectTransform));
             tabContent.transform.SetParent(root.transform, false);
             var tcrt = tabContent.GetComponent<RectTransform>();
-            tcrt.anchorMin = new Vector2(0.05f, 0.05f); tcrt.anchorMax = new Vector2(0.95f, 0.85f);
-            tcrt.sizeDelta = Vector2.zero;
+            SetAnchors(tcrt, 0.03f, 0.03f, 0.97f, 0.88f);
 
-            // Clue list (tab 0)
-            var clueScroll = CreateScrollView(tabContent.transform, "ClueList", Vector4.zero, true);
+            // Clue list (tab 0) - scrollview stretch
+            var clueScroll = CreateScrollView(tabContent.transform, "ClueList", true);
             var clueContent = clueScroll.transform.Find("Viewport/Content");
             var cvl = clueContent.gameObject.AddComponent<VerticalLayoutGroup>();
-            cvl.spacing = 5; cvl.childForceExpandWidth = true; cvl.childForceExpandHeight = false;
-            var ccsf = clueContent.gameObject.AddComponent<ContentSizeFitter>();
-            ccsf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            cvl.spacing = 5;
+            cvl.childForceExpandWidth = true;
+            cvl.childForceExpandHeight = false;
+            cvl.padding = new RectOffset(5, 5, 5, 5);
+            clueContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             // Character list (tab 1)
-            var charScroll = CreateScrollView(tabContent.transform, "CharacterList", Vector4.zero, true);
+            var charScroll = CreateScrollView(tabContent.transform, "CharacterList", true);
             var charContent = charScroll.transform.Find("Viewport/Content");
             var chvl = charContent.gameObject.AddComponent<VerticalLayoutGroup>();
-            chvl.spacing = 5; chvl.childForceExpandWidth = true; chvl.childForceExpandHeight = false;
-            var chcsf = charContent.gameObject.AddComponent<ContentSizeFitter>();
-            chcsf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            chvl.spacing = 5;
+            chvl.childForceExpandWidth = true;
+            chvl.childForceExpandHeight = false;
+            chvl.padding = new RectOffset(5, 5, 5, 5);
+            charContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             charScroll.SetActive(false);
 
             // SelectSwitch for tab switching
@@ -628,6 +1194,8 @@ namespace Luzart.Editor
             WireField(comp, "btnCluesTab", btnClues.btn);
             WireField(comp, "btnCharactersTab", btnChars.btn);
             WireField(comp, "tabSwitch", tabSwitch);
+            WireField(comp, "clueTabToggle", clueTabToggle);
+            WireField(comp, "characterTabToggle", charTabToggle);
             WireField(comp, "clueListContainer", clueContent);
             WireField(comp, "characterListContainer", charContent);
             if (cluePrefab != null)
@@ -650,23 +1218,23 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UISettings>();
             comp.uiName = UIName.Settings;
 
-            var panel = CreatePopupPanel(root.transform, "Panel", 400, 350);
-            var content = panel.transform;
+            var panel = CreatePopupPanel(root.transform, "Panel", 500, 400);
 
-            var title = CreateText(content, "Title", "SETTINGS", 28);
+            var title = CreateText(panel.transform, "Title", "SETTINGS", 30);
+            title.text.fontStyle = FontStyles.Bold;
             title.go.AddComponent<LayoutElement>().preferredHeight = 50;
 
-            // Music slider
-            var musicLabel = CreateText(content, "MusicLabel", "Music Volume", 18);
+            // Music
+            var musicLabel = CreateText(panel.transform, "MusicLabel", "Music Volume", 18);
             musicLabel.text.alignment = TextAlignmentOptions.Left;
             musicLabel.go.AddComponent<LayoutElement>().preferredHeight = 30;
-            var sliderMusic = CreateSlider(content, "SliderMusic");
+            var sliderMusic = CreateSlider(panel.transform, "SliderMusic");
 
-            // SFX slider
-            var sfxLabel = CreateText(content, "SfxLabel", "SFX Volume", 18);
+            // SFX
+            var sfxLabel = CreateText(panel.transform, "SfxLabel", "SFX Volume", 18);
             sfxLabel.text.alignment = TextAlignmentOptions.Left;
             sfxLabel.go.AddComponent<LayoutElement>().preferredHeight = 30;
-            var sliderSfx = CreateSlider(content, "SliderSfx");
+            var sliderSfx = CreateSlider(panel.transform, "SliderSfx");
 
             var btnClose = CreateCloseButton(root.transform);
             comp.closeBtn = btnClose;
@@ -689,14 +1257,15 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UIGuide>();
             comp.uiName = UIName.Guide;
 
-            var panel = CreatePopupPanel(root.transform, "Panel", 500, 600);
+            var panel = CreatePopupPanel(root.transform, "Panel", 600, 700);
 
-            var title = CreateText(panel.transform, "Title", "HOW TO PLAY", 28);
+            var title = CreateText(panel.transform, "Title", "HOW TO PLAY", 30);
+            title.text.fontStyle = FontStyles.Bold;
             title.go.AddComponent<LayoutElement>().preferredHeight = 50;
 
             var guideText = CreateText(panel.transform, "GuideText",
                 "- Tap objects to investigate\n- Collect clues to solve the mystery\n- Check your Notebook for collected evidence\n- Solve puzzles to unlock items",
-                16);
+                18);
             guideText.text.alignment = TextAlignmentOptions.TopLeft;
             guideText.go.AddComponent<LayoutElement>().flexibleHeight = 1;
 
@@ -718,12 +1287,12 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UIClueDetail>();
             comp.uiName = UIName.ClueDetail;
 
-            var panel = CreatePopupPanel(root.transform, "Panel", 400, 500);
+            var panel = CreatePopupPanel(root.transform, "Panel", 500, 550);
 
-            var imgClue = CreateImage(panel.transform, "ImgClue", new Vector2(200, 200));
-            imgClue.go.AddComponent<LayoutElement>().preferredHeight = 200;
+            var imgClue = CreateImage(panel.transform, "ImgClue", new Vector2(220, 220));
+            imgClue.go.AddComponent<LayoutElement>().preferredHeight = 220;
 
-            var txtName = CreateText(panel.transform, "TxtClueName", "Clue Name", 24);
+            var txtName = CreateText(panel.transform, "TxtClueName", "Clue Name", 26);
             txtName.text.fontStyle = FontStyles.Bold;
             txtName.go.AddComponent<LayoutElement>().preferredHeight = 35;
 
@@ -731,9 +1300,14 @@ namespace Luzart.Editor
             txtCat.text.color = Color.gray;
             txtCat.go.AddComponent<LayoutElement>().preferredHeight = 25;
 
-            var txtDesc = CreateText(panel.transform, "TxtDescription", "Description...", 16);
+            var txtDesc = CreateText(panel.transform, "TxtDescription", "Description...", 18);
             txtDesc.text.alignment = TextAlignmentOptions.TopLeft;
             txtDesc.go.AddComponent<LayoutElement>().flexibleHeight = 1;
+
+            // NotebookTarget - an empty transform for fly-to animation target
+            var notebookTarget = new GameObject("NotebookTarget", typeof(RectTransform));
+            notebookTarget.transform.SetParent(root.transform, false);
+            SetAnchorPoint(notebookTarget.GetComponent<RectTransform>(), 1f, 1f, new Vector2(30, 30), new Vector2(-60, -60));
 
             var btnClose = CreateCloseButton(root.transform);
             comp.closeBtn = btnClose;
@@ -744,6 +1318,7 @@ namespace Luzart.Editor
             WireField(comp, "txtClueName", txtName.text);
             WireField(comp, "txtCategory", txtCat.text);
             WireField(comp, "txtDescription", txtDesc.text);
+            WireField(comp, "notebookTarget", notebookTarget.transform);
 
             SavePrefab(root, path);
         }
@@ -758,48 +1333,77 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UILockPuzzle>();
             comp.uiName = UIName.LockPuzzle;
 
-            var panel = CreatePopupPanel(root.transform, "Panel", 400, 350);
+            var panel = CreatePopupPanel(root.transform, "Panel", 500, 400);
 
-            var title = CreateText(panel.transform, "Title", "ENTER PASSCODE", 24);
+            var title = CreateText(panel.transform, "Title", "ENTER PASSCODE", 26);
+            title.text.fontStyle = FontStyles.Bold;
             title.go.AddComponent<LayoutElement>().preferredHeight = 40;
 
             var txtHint = CreateText(panel.transform, "TxtHint", "Hint: ...", 16);
             txtHint.text.color = Color.gray;
             txtHint.go.AddComponent<LayoutElement>().preferredHeight = 30;
 
+            // Passcode panel (tab 0 of panelSwitch)
+            var passcodePanel = new GameObject("PasscodePanel", typeof(RectTransform));
+            passcodePanel.transform.SetParent(panel.transform, false);
+            var ppVl = passcodePanel.AddComponent<VerticalLayoutGroup>();
+            ppVl.spacing = 8;
+            ppVl.childForceExpandWidth = true;
+            ppVl.childForceExpandHeight = false;
+            passcodePanel.AddComponent<LayoutElement>().flexibleHeight = 1;
+
             // Input field
             var inputGo = new GameObject("InputPasscode", typeof(RectTransform), typeof(Image), typeof(TMP_InputField));
-            inputGo.transform.SetParent(panel.transform, false);
+            inputGo.transform.SetParent(passcodePanel.transform, false);
             inputGo.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.25f);
-            inputGo.AddComponent<LayoutElement>().preferredHeight = 50;
-            var inputField = inputGo.GetComponent<TMP_InputField>();
+            inputGo.AddComponent<LayoutElement>().preferredHeight = 55;
 
-            var inputText = CreateText(inputGo.transform, "Text", "", 20);
+            var inputText = CreateText(inputGo.transform, "Text", "", 22);
             StretchFill(inputText.go.GetComponent<RectTransform>());
             inputText.go.GetComponent<RectTransform>().offsetMin = new Vector2(10, 5);
             inputText.go.GetComponent<RectTransform>().offsetMax = new Vector2(-10, -5);
-            inputField.textComponent = inputText.text;
 
-            var placeholder = CreateText(inputGo.transform, "Placeholder", "Enter code...", 20);
+            var placeholder = CreateText(inputGo.transform, "Placeholder", "Enter code...", 22);
             StretchFill(placeholder.go.GetComponent<RectTransform>());
             placeholder.go.GetComponent<RectTransform>().offsetMin = new Vector2(10, 5);
             placeholder.go.GetComponent<RectTransform>().offsetMax = new Vector2(-10, -5);
             placeholder.text.color = new Color(1, 1, 1, 0.3f);
+
+            var inputField = inputGo.GetComponent<TMP_InputField>();
+            inputField.textComponent = inputText.text;
             inputField.placeholder = placeholder.text;
 
+            // Swipe panel (tab 1 - placeholder)
+            var swipePanel = new GameObject("SwipePanel", typeof(RectTransform));
+            swipePanel.transform.SetParent(panel.transform, false);
+            swipePanel.AddComponent<LayoutElement>().flexibleHeight = 1;
+            var swipeText = CreateText(swipePanel.transform, "SwipeText", "Swipe Pattern", 18);
+            StretchFill(swipeText.go.GetComponent<RectTransform>());
+            swipePanel.SetActive(false);
+
+            // PanelSwitch for lock types
+            var panelSwitch = panel.AddComponent<SelectSwitchGameObject>();
+            panelSwitch.obSelects = new GroupGameObject[]
+            {
+                new GroupGameObject { obGroups = new[] { passcodePanel } },
+                new GroupGameObject { obGroups = new[] { swipePanel } }
+            };
+
+            // Error text
             var txtError = CreateText(panel.transform, "TxtError", "Wrong passcode!", 16);
             txtError.text.color = Color.red;
             txtError.go.AddComponent<LayoutElement>().preferredHeight = 25;
             txtError.go.SetActive(false);
 
-            var btnConfirm = CreateButton(panel.transform, "BtnConfirm", "CONFIRM", new Vector2(0, 50));
-            btnConfirm.go.AddComponent<EffectButton>();
+            // Confirm button
+            var btnConfirm = CreateLayoutButton(panel.transform, "BtnConfirm", "CONFIRM", 55);
 
             var btnClose = CreateCloseButton(root.transform);
             comp.closeBtn = btnClose;
 
             AddShowAnimation(root);
 
+            WireField(comp, "panelSwitch", panelSwitch);
             WireField(comp, "inputPasscode", inputField);
             WireField(comp, "btnConfirm", btnConfirm.btn);
             WireField(comp, "txtHint", txtHint.text);
@@ -818,21 +1422,29 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UIConfirmExit>();
             comp.uiName = UIName.ConfirmExit;
 
-            var panel = CreatePopupPanel(root.transform, "Panel", 350, 200);
+            var panel = CreatePopupPanel(root.transform, "Panel", 450, 220);
 
-            var title = CreateText(panel.transform, "Title", "EXIT GAME?", 24);
+            var title = CreateText(panel.transform, "Title", "EXIT GAME?", 26);
+            title.text.fontStyle = FontStyles.Bold;
             title.go.AddComponent<LayoutElement>().preferredHeight = 50;
+
+            var spacer = new GameObject("Spacer", typeof(RectTransform));
+            spacer.transform.SetParent(panel.transform, false);
+            spacer.AddComponent<LayoutElement>().flexibleHeight = 1;
 
             var btnBar = new GameObject("ButtonBar", typeof(RectTransform), typeof(HorizontalLayoutGroup));
             btnBar.transform.SetParent(panel.transform, false);
             var hbl = btnBar.GetComponent<HorizontalLayoutGroup>();
-            hbl.spacing = 20; hbl.childForceExpandWidth = true;
-            btnBar.AddComponent<LayoutElement>().preferredHeight = 50;
+            hbl.spacing = 30;
+            hbl.childForceExpandWidth = true;
+            hbl.childForceExpandHeight = true;
+            btnBar.AddComponent<LayoutElement>().preferredHeight = 55;
 
-            var btnYes = CreateButton(btnBar.transform, "BtnYes", "YES", new Vector2(0, 50));
+            var btnYes = CreateButton(btnBar.transform, "BtnYes", "YES", Vector2.zero);
             btnYes.go.GetComponent<Image>().color = new Color(0.6f, 0.15f, 0.15f);
             btnYes.go.AddComponent<EffectButton>();
-            var btnNo = CreateButton(btnBar.transform, "BtnNo", "NO", new Vector2(0, 50));
+
+            var btnNo = CreateButton(btnBar.transform, "BtnNo", "NO", Vector2.zero);
             btnNo.go.AddComponent<EffectButton>();
 
             AddShowAnimation(root);
@@ -855,25 +1467,32 @@ namespace Luzart.Editor
             comp.uiName = UIName.InvestigationHud;
             comp.isCache = true;
 
-            // Top bar
+            // Top bar - stretch across top
             var topBar = new GameObject("TopBar", typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup));
             topBar.transform.SetParent(root.transform, false);
             var tbrt = topBar.GetComponent<RectTransform>();
-            tbrt.anchorMin = new Vector2(0, 0.92f); tbrt.anchorMax = new Vector2(1, 1);
-            tbrt.sizeDelta = Vector2.zero;
-            topBar.GetComponent<Image>().color = new Color(0, 0, 0, 0.5f);
+            SetAnchors(tbrt, 0f, 0.94f, 1f, 1f);
+            topBar.GetComponent<Image>().color = new Color(0, 0, 0, 0.6f);
             var tbhl = topBar.GetComponent<HorizontalLayoutGroup>();
-            tbhl.spacing = 10; tbhl.padding = new RectOffset(15, 15, 5, 5);
+            tbhl.spacing = 10;
+            tbhl.padding = new RectOffset(20, 20, 5, 5);
             tbhl.childForceExpandWidth = false;
+            tbhl.childForceExpandHeight = true;
+            tbhl.childAlignment = TextAnchor.MiddleLeft;
 
-            var txtClue = CreateText(topBar.transform, "TxtClueCount", "0/0", 20);
-            txtClue.go.AddComponent<LayoutElement>().preferredWidth = 80;
+            // Clue counter
+            var txtClue = CreateText(topBar.transform, "TxtClueCount", "0/0", 22);
+            txtClue.go.AddComponent<LayoutElement>().preferredWidth = 100;
+            txtClue.text.alignment = TextAlignmentOptions.Left;
 
+            // Spacer
             var spacer = new GameObject("Spacer", typeof(RectTransform));
             spacer.transform.SetParent(topBar.transform, false);
             spacer.AddComponent<LayoutElement>().flexibleWidth = 1;
 
-            var btnNotebook = CreateButton(topBar.transform, "BtnNotebook", "NOTEBOOK", new Vector2(120, 0));
+            // Notebook button
+            var btnNotebook = CreateButton(topBar.transform, "BtnNotebook", "NOTEBOOK", new Vector2(140, 0));
+            btnNotebook.go.AddComponent<LayoutElement>().preferredWidth = 140;
             btnNotebook.go.AddComponent<EffectButton>();
 
             // Badge on notebook button
@@ -881,15 +1500,20 @@ namespace Luzart.Editor
             badge.transform.SetParent(btnNotebook.go.transform, false);
             badge.GetComponent<Image>().color = Color.red;
             var brt = badge.GetComponent<RectTransform>();
-            brt.anchorMin = new Vector2(1, 1); brt.anchorMax = new Vector2(1, 1);
-            brt.sizeDelta = new Vector2(15, 15); brt.anchoredPosition = new Vector2(-5, -5);
+            brt.anchorMin = new Vector2(1, 1);
+            brt.anchorMax = new Vector2(1, 1);
+            brt.pivot = new Vector2(1, 1);
+            brt.sizeDelta = new Vector2(16, 16);
+            brt.anchoredPosition = new Vector2(-3, -3);
             badge.SetActive(false);
 
             var badgeToggle = btnNotebook.go.AddComponent<SelectToggleGameObject>();
             badgeToggle.obSelect = new[] { badge };
             badgeToggle.obUnSelect = new GameObject[0];
 
-            var btnSettings = CreateButton(topBar.transform, "BtnSettings", "SETTINGS", new Vector2(120, 0));
+            // Settings button
+            var btnSettings = CreateButton(topBar.transform, "BtnSettings", "SETTINGS", new Vector2(140, 0));
+            btnSettings.go.AddComponent<LayoutElement>().preferredWidth = 140;
             btnSettings.go.AddComponent<EffectButton>();
 
             WireField(comp, "btnSettings", btnSettings.btn);
@@ -1024,7 +1648,6 @@ namespace Luzart.Editor
         {
             string dir = DATA + "/Actions";
 
-            // Collect clue actions
             var clueIds = new[] { "Clue_Ring", "Clue_Knife", "Clue_GardenTool" };
             foreach (var id in clueIds)
             {
@@ -1033,14 +1656,9 @@ namespace Luzart.Editor
                     CreateCollectClueAction(dir, "Act_Collect_" + id.Replace("Clue_", ""), clue);
             }
 
-            // Toast actions
             CreateToastAction(dir, "Act_Toast_WrongCode", "Sai mat khau! Hay thu lai.");
             CreateToastAction(dir, "Act_Toast_Unlocked", "Mo khoa thanh cong!");
-
-            // Close popup action
             CreateClosePopupAction(dir, "Act_ClosePopup");
-
-            // Wait action
             CreateWaitAction(dir, "Act_Wait_1s", 1f);
         }
 
@@ -1083,38 +1701,46 @@ namespace Luzart.Editor
         {
             string dir = DATA + "/Interactables";
 
-            // Clue interactables
-            CreateInteractable(dir, "IO_BrokenVase", InteractType.Clue, "Clue_BrokenVase");
-            CreateInteractable(dir, "IO_Letter", InteractType.Clue, "Clue_Letter");
-            CreateInteractable(dir, "IO_Footprint", InteractType.Clue, "Clue_Footprint");
-            CreateInteractable(dir, "IO_Photo", InteractType.Clue, "Clue_Photo");
-            CreateInteractable(dir, "IO_Diary", InteractType.Clue, "Clue_Diary");
-            CreateInteractable(dir, "IO_Medicine", InteractType.Clue, "Clue_Medicine");
-            CreateInteractable(dir, "IO_Phone", InteractType.Clue, "Clue_Phone");
-            CreateInteractable(dir, "IO_GardenToolClue", InteractType.Clue, "Clue_GardenTool");
+            // Clue interactables (each unique for each room)
+            CreateClueInteractable(dir, "IO_BrokenVase", "Clue_BrokenVase");
+            CreateClueInteractable(dir, "IO_Letter", "Clue_Letter");
+            CreateClueInteractable(dir, "IO_Footprint_Bath", "Clue_Footprint");
+            CreateClueInteractable(dir, "IO_Footprint_Yard", "Clue_Footprint");
+            CreateClueInteractable(dir, "IO_Photo_Living", "Clue_Photo");
+            CreateClueInteractable(dir, "IO_Photo_Guest", "Clue_Photo");
+            CreateClueInteractable(dir, "IO_Diary", "Clue_Diary");
+            CreateClueInteractable(dir, "IO_Medicine", "Clue_Medicine");
+            CreateClueInteractable(dir, "IO_Phone", "Clue_Phone");
+            CreateClueInteractable(dir, "IO_GardenToolClue", "Clue_GardenTool");
+            CreateClueInteractable(dir, "IO_Letter_Pond", "Clue_Letter");
 
             // NPC interactables
             CreateNPCInteractable(dir, "IO_Wife", "Dlg_Wife");
             CreateNPCInteractable(dir, "IO_Neighbor", "Dlg_Neighbor");
             CreateNPCInteractable(dir, "IO_Butler", "Dlg_Butler");
 
-            // Locked item interactables
-            CreateLockedInteractable(dir, "IO_Safe", "Lock_Safe", new[] { "Act_Toast_Unlocked", "Act_Collect_Ring" }, new[] { "Act_Toast_WrongCode" });
-            CreateLockedInteractable(dir, "IO_Drawer", "Lock_Drawer", new[] { "Act_Toast_Unlocked", "Act_Collect_Knife" }, new[] { "Act_Toast_WrongCode" });
-            CreateLockedInteractable(dir, "IO_Cabinet", "Lock_Cabinet", new[] { "Act_Toast_Unlocked", "Act_Collect_GardenTool" }, new[] { "Act_Toast_WrongCode" });
+            // Locked items
+            CreateLockedInteractable(dir, "IO_Safe", "Lock_Safe",
+                new[] { "Act_Toast_Unlocked", "Act_Collect_Ring" },
+                new[] { "Act_Toast_WrongCode" });
+            CreateLockedInteractable(dir, "IO_Drawer", "Lock_Drawer",
+                new[] { "Act_Toast_Unlocked", "Act_Collect_Knife" },
+                new[] { "Act_Toast_WrongCode" });
+            CreateLockedInteractable(dir, "IO_Cabinet", "Lock_Cabinet",
+                new[] { "Act_Toast_Unlocked", "Act_Collect_GardenTool" },
+                new[] { "Act_Toast_WrongCode" });
         }
 
-        static void CreateInteractable(string dir, string fileName, InteractType type, string clueAssetName)
+        static void CreateClueInteractable(string dir, string fileName, string clueAssetName)
         {
             string path = $"{dir}/{fileName}.asset";
             if (Exists(path)) return;
             var so = ScriptableObject.CreateInstance<InteractableObjectSO>();
             so.objectId = fileName;
-            so.interactType = type;
+            so.interactType = InteractType.Clue;
             so.isOneTimeOnly = true;
             so.hitboxSize = new Vector2(80, 80);
-            if (type == InteractType.Clue)
-                so.clue = LoadAsset<ClueSO>(DATA + "/Clues/" + clueAssetName + ".asset");
+            so.clue = LoadAsset<ClueSO>(DATA + "/Clues/" + clueAssetName + ".asset");
             AssetDatabase.CreateAsset(so, path);
         }
 
@@ -1159,32 +1785,32 @@ namespace Luzart.Editor
             string roomDir = DATA + "/Rooms";
             string mapDir = DATA + "/Maps";
 
-            // 9 Rooms
+            // 9 Rooms - each with UNIQUE interactable references
             var room1 = CreateRoom(roomDir, "Room_LivingRoom", "Phong Khach", "Dlg_Intro",
-                ("IO_BrokenVase", 200, 300), ("IO_Photo", 500, 200), ("IO_Wife", 800, 350));
+                ("IO_BrokenVase", 200, 300), ("IO_Photo_Living", 500, 200), ("IO_Wife", 800, 350));
             var room2 = CreateRoom(roomDir, "Room_Kitchen", "Phong Bep", null,
-                ("IO_Knife", -200, 100), ("IO_Medicine", 300, -100));
+                ("IO_Medicine", 300, 100));
             var room3 = CreateRoom(roomDir, "Room_Study", "Phong Lam Viec", null,
                 ("IO_Letter", -100, 200), ("IO_Diary", 200, -50), ("IO_Safe", 500, 100));
             var room4 = CreateRoom(roomDir, "Room_MasterBedroom", "Phong Ngu Chinh", null,
                 ("IO_Phone", 100, 200), ("IO_Drawer", 400, 100), ("IO_Butler", -200, 300));
             var room5 = CreateRoom(roomDir, "Room_Bathroom", "Phong Tam", null,
-                ("IO_Footprint", 0, -100));
+                ("IO_Footprint_Bath", 0, -100));
             var room6 = CreateRoom(roomDir, "Room_GuestRoom", "Phong Khach San", null,
-                ("IO_Photo", 300, 200));
+                ("IO_Photo_Guest", 300, 200));
             var room7 = CreateRoom(roomDir, "Room_FrontYard", "San Truoc", null,
-                ("IO_Neighbor", 200, 300), ("IO_Footprint", -100, 0));
+                ("IO_Neighbor", 200, 300), ("IO_Footprint_Yard", -100, 0));
             var room8 = CreateRoom(roomDir, "Room_Shed", "Nha Kho", null,
                 ("IO_GardenToolClue", -200, 100), ("IO_Cabinet", 300, 50));
             var room9 = CreateRoom(roomDir, "Room_FishPond", "Ho Ca", null,
-                ("IO_Letter", 100, -200));
+                ("IO_Letter_Pond", 100, -200));
 
             // 3 Maps
             CreateMap(mapDir, "Map_Floor1", "Tang 1 - Biet Thu", room1, room2, room3);
             CreateMap(mapDir, "Map_Floor2", "Tang 2 - Biet Thu", room4, room5, room6);
             CreateMap(mapDir, "Map_Garden", "Khu Vuon", room7, room8, room9);
 
-            // Wire GameConfig with maps
+            // Wire GameConfig
             var config = LoadAsset<GameConfigSO>(DATA + "/Config/GameConfig.asset");
             if (config != null)
             {
@@ -1218,6 +1844,8 @@ namespace Luzart.Editor
                 var ioData = LoadAsset<InteractableObjectSO>(DATA + "/Interactables/" + ioName + ".asset");
                 if (ioData != null)
                     so.interactables.Add(new RoomInteractable { data = ioData, positionOnBackground = new Vector2(x, y) });
+                else
+                    Debug.LogWarning($"[Room] Interactable not found: {ioName}");
             }
 
             AssetDatabase.CreateAsset(so, path);
@@ -1237,123 +1865,6 @@ namespace Luzart.Editor
         }
         #endregion
 
-        #region Scene Setup
-        static void CreateSceneHierarchy()
-        {
-            // EventSystem
-            if (Object.FindFirstObjectByType<EventSystem>() == null)
-            {
-                var esGo = new GameObject("EventSystem");
-                esGo.AddComponent<EventSystem>();
-                esGo.AddComponent<StandaloneInputModule>();
-            }
-
-            // Canvas
-            var existingUIManager = Object.FindFirstObjectByType<UIManager>();
-            if (existingUIManager != null)
-                Object.DestroyImmediate(existingUIManager.gameObject);
-
-            var canvasGo = new GameObject("Canvas");
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080, 1920);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            var raycaster = canvasGo.AddComponent<GraphicRaycaster>();
-
-            // Layer roots
-            string[] layerNames = { "Layer_Screen", "Layer_Popup", "Layer_HUD", "Layer_System", "Layer_Toast" };
-            Transform[] layers = new Transform[layerNames.Length];
-            for (int i = 0; i < layerNames.Length; i++)
-            {
-                var lg = new GameObject(layerNames[i]);
-                lg.transform.SetParent(canvasGo.transform, false);
-                var lrt = lg.AddComponent<RectTransform>();
-                StretchFill(lrt);
-                layers[i] = lg.transform;
-            }
-
-            // UIManager
-            var uiManager = canvasGo.AddComponent<UIManager>();
-            uiManager.canvas = canvas;
-            uiManager.graphicRaycaster = raycaster;
-
-            var uiSo = new SerializedObject(uiManager);
-            var rootObProp = uiSo.FindProperty("rootOb");
-            rootObProp.arraySize = layers.Length;
-            for (int i = 0; i < layers.Length; i++)
-                rootObProp.GetArrayElementAtIndex(i).objectReferenceValue = layers[i];
-
-            var registry = LoadAsset<UIRegistrySO>(DATA + "/Config/UIRegistry.asset");
-            uiSo.FindProperty("registry").objectReferenceValue = registry;
-            uiSo.ApplyModifiedPropertiesWithoutUndo();
-
-            // Managers
-            var managersGo = new GameObject("--- Managers ---");
-
-            CreateManagerInScene<GameDataManager>(managersGo.transform, "GameDataManager", mgr =>
-            {
-                var s = new SerializedObject(mgr);
-                s.FindProperty("onClueCollected").objectReferenceValue = LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset");
-                s.FindProperty("onNotebookUpdated").objectReferenceValue = LoadAsset<GameEventChannel>(DATA + "/Events/OnNotebookUpdated.asset");
-                s.ApplyModifiedPropertiesWithoutUndo();
-            });
-
-            CreateManagerInScene<GameFlowController>(managersGo.transform, "GameFlowController", mgr =>
-            {
-                var s = new SerializedObject(mgr);
-                s.FindProperty("gameConfig").objectReferenceValue = LoadAsset<GameConfigSO>(DATA + "/Config/GameConfig.asset");
-                s.ApplyModifiedPropertiesWithoutUndo();
-            });
-
-            CreateManagerInScene<DialogueManager>(managersGo.transform, "DialogueManager");
-            CreateManagerInScene<InvestigationManager>(managersGo.transform, "InvestigationManager");
-
-            CreateManagerInScene<NotebookManager>(managersGo.transform, "NotebookManager", mgr =>
-            {
-                var s = new SerializedObject(mgr);
-                // Wire allClues array with all clue SOs
-                var clueGuids = AssetDatabase.FindAssets("t:ClueSO", new[] { DATA + "/Clues" });
-                var allCluesProp = s.FindProperty("allClues");
-                allCluesProp.arraySize = clueGuids.Length;
-                for (int i = 0; i < clueGuids.Length; i++)
-                {
-                    var clue = AssetDatabase.LoadAssetAtPath<ClueSO>(AssetDatabase.GUIDToAssetPath(clueGuids[i]));
-                    allCluesProp.GetArrayElementAtIndex(i).objectReferenceValue = clue;
-                }
-                // Wire allCharacters array
-                var charGuids = AssetDatabase.FindAssets("t:DialogueCharacterSO", new[] { DATA + "/Characters" });
-                var allCharsProp = s.FindProperty("allCharacters");
-                allCharsProp.arraySize = charGuids.Length;
-                for (int i = 0; i < charGuids.Length; i++)
-                {
-                    var ch = AssetDatabase.LoadAssetAtPath<DialogueCharacterSO>(AssetDatabase.GUIDToAssetPath(charGuids[i]));
-                    allCharsProp.GetArrayElementAtIndex(i).objectReferenceValue = ch;
-                }
-                s.FindProperty("onClueCollected").objectReferenceValue = LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset");
-                s.ApplyModifiedPropertiesWithoutUndo();
-            });
-
-            // Bootstrap
-            var bootstrapGo = new GameObject("GameBootstrap");
-            bootstrapGo.AddComponent<GameBootstrap>();
-
-            EditorUtility.SetDirty(canvasGo);
-        }
-
-        static T CreateManagerInScene<T>(Transform parent, string name, System.Action<T> configure = null) where T : MonoBehaviour
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var comp = go.AddComponent<T>();
-            configure?.Invoke(comp);
-            return comp;
-        }
-        #endregion
-
         #region Wire References
         static void WireUIRegistry()
         {
@@ -1364,14 +1875,13 @@ namespace Luzart.Editor
             var entries = so.FindProperty("entries");
             entries.ClearArray();
 
-            // Map UIName → prefab path and config
             var uiMap = new (UIName name, string path, int layer, bool cache)[]
             {
                 (UIName.Toast, PREFABS + "/System/UIToast.prefab", 4, true),
                 (UIName.Loading, PREFABS + "/System/UILoading.prefab", 3, true),
                 (UIName.MainMenu, PREFABS + "/Screens/UIMainMenu.prefab", 0, true),
                 (UIName.Cutscene, PREFABS + "/Screens/UICutscene.prefab", 0, false),
-                (UIName.NPCDialogue, PREFABS + "/Screens/UINPCDialogue.prefab", 0, true),
+                (UIName.NPCDialogue, PREFABS + "/Screens/UINPCDialogue.prefab", 1, true),
                 (UIName.MapSelection, PREFABS + "/Screens/UIMapSelection.prefab", 0, false),
                 (UIName.Investigation, PREFABS + "/Screens/UIInvestigation.prefab", 0, false),
                 (UIName.Notebook, PREFABS + "/Screens/UINotebook.prefab", 1, false),
@@ -1385,16 +1895,18 @@ namespace Luzart.Editor
 
             for (int i = 0; i < uiMap.Length; i++)
             {
-                var (name, path, layer, cache) = uiMap[i];
+                var (uiName, path, layer, cache) = uiMap[i];
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (prefab == null) { Debug.LogWarning($"[Wire] Prefab not found: {path}"); continue; }
 
                 var uiBase = prefab.GetComponent<UIBase>();
-                if (uiBase == null) continue;
+                if (uiBase == null) { Debug.LogWarning($"[Wire] No UIBase on: {path}"); continue; }
 
                 entries.InsertArrayElementAtIndex(entries.arraySize);
                 var entry = entries.GetArrayElementAtIndex(entries.arraySize - 1);
-                entry.FindPropertyRelative("uiName").enumValueIndex = (int)name;
+
+                // FIX: Use GetUINameEnumIndex for correct enum dropdown index
+                entry.FindPropertyRelative("uiName").enumValueIndex = GetUINameEnumIndex(uiName);
                 entry.FindPropertyRelative("prefab").objectReferenceValue = uiBase;
                 entry.FindPropertyRelative("layerIndex").intValue = layer;
                 entry.FindPropertyRelative("useCache").boolValue = cache;
@@ -1407,14 +1919,54 @@ namespace Luzart.Editor
 
         static void WireManagerReferences()
         {
-            // Wire scene managers with SO events (if scene is set up)
+            // Re-wire scene managers if they exist
+            var gdm = Object.FindFirstObjectByType<GameDataManager>();
+            if (gdm != null)
+            {
+                var s = new SerializedObject(gdm);
+                s.FindProperty("onClueCollected").objectReferenceValue =
+                    LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset");
+                s.FindProperty("onNotebookUpdated").objectReferenceValue =
+                    LoadAsset<GameEventChannel>(DATA + "/Events/OnNotebookUpdated.asset");
+                s.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            var nbm = Object.FindFirstObjectByType<NotebookManager>();
+            if (nbm != null)
+            {
+                var s = new SerializedObject(nbm);
+                s.FindProperty("onClueCollected").objectReferenceValue =
+                    LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset");
+
+                var clueGuids = AssetDatabase.FindAssets("t:ClueSO", new[] { DATA + "/Clues" });
+                var allCluesProp = s.FindProperty("allClues");
+                allCluesProp.arraySize = clueGuids.Length;
+                for (int i = 0; i < clueGuids.Length; i++)
+                    allCluesProp.GetArrayElementAtIndex(i).objectReferenceValue =
+                        AssetDatabase.LoadAssetAtPath<ClueSO>(AssetDatabase.GUIDToAssetPath(clueGuids[i]));
+
+                var charGuids = AssetDatabase.FindAssets("t:DialogueCharacterSO", new[] { DATA + "/Characters" });
+                var allCharsProp = s.FindProperty("allCharacters");
+                allCharsProp.arraySize = charGuids.Length;
+                for (int i = 0; i < charGuids.Length; i++)
+                    allCharsProp.GetArrayElementAtIndex(i).objectReferenceValue =
+                        AssetDatabase.LoadAssetAtPath<DialogueCharacterSO>(AssetDatabase.GUIDToAssetPath(charGuids[i]));
+
+                s.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        static void WirePrefabSOEvents()
+        {
+            // Wire SO Events into prefabs that need them
             var hud = AssetDatabase.LoadAssetAtPath<GameObject>(PREFABS + "/HUD/UIInvestigationHud.prefab");
             if (hud != null)
             {
                 var hudComp = hud.GetComponent<UIInvestigationHud>();
                 if (hudComp != null)
                 {
-                    WireField(hudComp, "onClueCollected", LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset"));
+                    WireField(hudComp, "onClueCollected",
+                        LoadAsset<StringEventChannel>(DATA + "/Events/OnClueCollected.asset"));
                     EditorUtility.SetDirty(hud);
                 }
             }
@@ -1425,272 +1977,10 @@ namespace Luzart.Editor
                 var setComp = settings.GetComponent<UISettings>();
                 if (setComp != null)
                 {
-                    WireField(setComp, "onSettingsChanged", LoadAsset<GameEventChannel>(DATA + "/Events/OnSettingsChanged.asset"));
+                    WireField(setComp, "onSettingsChanged",
+                        LoadAsset<GameEventChannel>(DATA + "/Events/OnSettingsChanged.asset"));
                     EditorUtility.SetDirty(settings);
                 }
-            }
-        }
-        #endregion
-
-        #region Helpers - UI Building
-        static GameObject CreateUIRoot(string name, Vector2 size, bool stretch)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            var rt = go.GetComponent<RectTransform>();
-            if (stretch)
-                StretchFill(rt);
-            else
-                rt.sizeDelta = size;
-            return go;
-        }
-
-        static void StretchFill(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.sizeDelta = Vector2.zero;
-            rt.anchoredPosition = Vector2.zero;
-        }
-
-        static (GameObject go, Button btn, TMP_Text text) CreateButton(Transform parent, string name, string label, Vector2 size)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            go.GetComponent<RectTransform>().sizeDelta = size;
-            go.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.3f, 1f);
-
-            var textGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
-            textGo.transform.SetParent(go.transform, false);
-            StretchFill(textGo.GetComponent<RectTransform>());
-
-            var text = textGo.GetComponent<TextMeshProUGUI>();
-            text.text = label;
-            text.fontSize = 20;
-            text.alignment = TextAlignmentOptions.Center;
-            text.color = Color.white;
-
-            return (go, go.GetComponent<Button>(), text);
-        }
-
-        static (GameObject go, TMP_Text text) CreateText(Transform parent, string name, string defaultText, int fontSize = 24)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
-            go.transform.SetParent(parent, false);
-            var text = go.GetComponent<TextMeshProUGUI>();
-            text.text = defaultText;
-            text.fontSize = fontSize;
-            text.alignment = TextAlignmentOptions.Center;
-            text.color = Color.white;
-            return (go, text);
-        }
-
-        static (GameObject go, Image img) CreateImage(Transform parent, string name, Vector2 size)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            go.GetComponent<RectTransform>().sizeDelta = size;
-            go.GetComponent<Image>().color = Color.gray;
-            return (go, go.GetComponent<Image>());
-        }
-
-        static Button CreateCloseButton(Transform parent)
-        {
-            var (go, btn, text) = CreateButton(parent, "BtnClose", "X", new Vector2(50, 50));
-            go.AddComponent<EffectButton>();
-            var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(1, 1); rt.anchorMax = new Vector2(1, 1);
-            rt.anchoredPosition = new Vector2(-35, -35);
-            go.GetComponent<Image>().color = new Color(0.5f, 0.1f, 0.1f);
-            return btn;
-        }
-
-        static GameObject CreatePopupPanel(Transform parent, string name, float width, float height)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
-            go.transform.SetParent(parent, false);
-            var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.5f, 0.5f); rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(width, height);
-            go.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 1f);
-
-            var vl = go.GetComponent<VerticalLayoutGroup>();
-            vl.spacing = 10;
-            vl.padding = new RectOffset(20, 20, 20, 20);
-            vl.childAlignment = TextAnchor.UpperCenter;
-            vl.childForceExpandWidth = true;
-            vl.childForceExpandHeight = false;
-
-            return go;
-        }
-
-        static GameObject CreateScrollView(Transform parent, string name, Vector4 anchors, bool stretch = false)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(ScrollRect));
-            go.transform.SetParent(parent, false);
-            var rt = go.GetComponent<RectTransform>();
-            if (stretch)
-            {
-                StretchFill(rt);
-            }
-            else
-            {
-                rt.anchorMin = new Vector2(anchors.x, anchors.y);
-                rt.anchorMax = new Vector2(anchors.z, anchors.w);
-                rt.sizeDelta = Vector2.zero;
-            }
-
-            // Viewport
-            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
-            viewport.transform.SetParent(go.transform, false);
-            StretchFill(viewport.GetComponent<RectTransform>());
-            viewport.GetComponent<Image>().color = new Color(1, 1, 1, 0.01f);
-            viewport.GetComponent<Mask>().showMaskGraphic = false;
-
-            // Content
-            var content = new GameObject("Content", typeof(RectTransform));
-            content.transform.SetParent(viewport.transform, false);
-            var crt = content.GetComponent<RectTransform>();
-            crt.anchorMin = new Vector2(0, 1); crt.anchorMax = new Vector2(1, 1);
-            crt.pivot = new Vector2(0.5f, 1);
-            crt.sizeDelta = Vector2.zero;
-
-            var scrollRect = go.GetComponent<ScrollRect>();
-            scrollRect.viewport = viewport.GetComponent<RectTransform>();
-            scrollRect.content = crt;
-            scrollRect.horizontal = false;
-            scrollRect.vertical = true;
-
-            return go;
-        }
-
-        static Slider CreateSlider(Transform parent, string name)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Slider));
-            go.transform.SetParent(parent, false);
-            go.AddComponent<LayoutElement>().preferredHeight = 30;
-
-            var bg = new GameObject("Background", typeof(RectTransform), typeof(Image));
-            bg.transform.SetParent(go.transform, false);
-            StretchFill(bg.GetComponent<RectTransform>());
-            bg.GetComponent<Image>().color = new Color(0.3f, 0.3f, 0.3f);
-
-            var fillArea = new GameObject("Fill Area", typeof(RectTransform));
-            fillArea.transform.SetParent(go.transform, false);
-            var fart = fillArea.GetComponent<RectTransform>();
-            fart.anchorMin = new Vector2(0, 0.25f); fart.anchorMax = new Vector2(1, 0.75f);
-            fart.sizeDelta = Vector2.zero;
-
-            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
-            fill.transform.SetParent(fillArea.transform, false);
-            StretchFill(fill.GetComponent<RectTransform>());
-            fill.GetComponent<Image>().color = new Color(0.3f, 0.6f, 1f);
-
-            var handleArea = new GameObject("Handle Slide Area", typeof(RectTransform));
-            handleArea.transform.SetParent(go.transform, false);
-            StretchFill(handleArea.GetComponent<RectTransform>());
-
-            var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
-            handle.transform.SetParent(handleArea.transform, false);
-            handle.GetComponent<RectTransform>().sizeDelta = new Vector2(20, 0);
-            handle.GetComponent<Image>().color = Color.white;
-
-            var slider = go.GetComponent<Slider>();
-            slider.fillRect = fill.GetComponent<RectTransform>();
-            slider.handleRect = handle.GetComponent<RectTransform>();
-            slider.targetGraphic = handle.GetComponent<Image>();
-            slider.value = 1f;
-
-            return slider;
-        }
-
-        static void AddShowAnimation(GameObject root)
-        {
-            // Add TweenAnimation (Scale) + TweenAnimationCaller
-            var tweenAnim = root.AddComponent<TweenAnimation>();
-            var caller = root.AddComponent<TweenAnimationCaller>();
-
-            var callerSo = new SerializedObject(caller);
-            callerSo.FindProperty("tweenAnimation").objectReferenceValue = tweenAnim;
-            callerSo.FindProperty("typeShow").enumValueIndex = (int)ETypeShow.None;
-            callerSo.ApplyModifiedPropertiesWithoutUndo();
-
-            // Configure scale animation
-            var animSo = new SerializedObject(tweenAnim);
-            animSo.FindProperty("typeAnimation").enumValueIndex = (int)EAnimation.Scale;
-
-            var genTarget = animSo.FindProperty("tweenAnimationSettings.General.Target");
-            genTarget.objectReferenceValue = root;
-            animSo.FindProperty("tweenAnimationSettings.General.Duration").floatValue = 0.25f;
-
-            animSo.FindProperty("tweenAnimationSettings.Values.Vector3From").vector3Value = new Vector3(0.85f, 0.85f, 1f);
-            animSo.FindProperty("tweenAnimationSettings.Values.Vector3To").vector3Value = Vector3.one;
-            animSo.ApplyModifiedPropertiesWithoutUndo();
-
-            // Wire to UIBase showAnimation
-            var uiBase = root.GetComponent<UIBase>();
-            if (uiBase != null)
-            {
-                var uiSo = new SerializedObject(uiBase);
-                uiSo.FindProperty("showAnimation").objectReferenceValue = caller;
-                uiSo.ApplyModifiedPropertiesWithoutUndo();
-            }
-        }
-        #endregion
-
-        #region Helpers - Asset Management
-        static void EnsureAllDirectories()
-        {
-            foreach (var d in DataDirs) EnsureDirectory(d);
-            foreach (var d in PrefabDirs) EnsureDirectory(d);
-        }
-
-        static void EnsureDirectory(string path)
-        {
-            if (AssetDatabase.IsValidFolder(path)) return;
-            string parent = Path.GetDirectoryName(path).Replace("\\", "/");
-            string folder = Path.GetFileName(path);
-            if (!AssetDatabase.IsValidFolder(parent))
-                EnsureDirectory(parent);
-            AssetDatabase.CreateFolder(parent, folder);
-        }
-
-        static T CreateSOIfNotExist<T>(string path) where T : ScriptableObject
-        {
-            var existing = AssetDatabase.LoadAssetAtPath<T>(path);
-            if (existing != null) return existing;
-            var so = ScriptableObject.CreateInstance<T>();
-            AssetDatabase.CreateAsset(so, path);
-            return so;
-        }
-
-        static T LoadAsset<T>(string path) where T : Object
-        {
-            return AssetDatabase.LoadAssetAtPath<T>(path);
-        }
-
-        static bool Exists(string path)
-        {
-            return AssetDatabase.LoadAssetAtPath<Object>(path) != null;
-        }
-
-        static void SavePrefab(GameObject root, string path)
-        {
-            PrefabUtility.SaveAsPrefabAsset(root, path);
-            Object.DestroyImmediate(root);
-        }
-
-        static void WireField(Object target, string fieldName, Object value)
-        {
-            var so = new SerializedObject(target);
-            var prop = so.FindProperty(fieldName);
-            if (prop != null)
-            {
-                prop.objectReferenceValue = value;
-                so.ApplyModifiedPropertiesWithoutUndo();
-            }
-            else
-            {
-                Debug.LogWarning($"[Wire] Field '{fieldName}' not found on {target.GetType().Name}");
             }
         }
         #endregion
