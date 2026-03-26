@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 835bfd16f1c9e0c4a8419ff9a223c664, type: 3}
+  m_Name: UIRegistry
+  m_EditorClassIdentifier: 
+  entries:
+  - uiName: 1
+    prefab: {fileID: 3864529990155274753, guid: 49f42858e1b6a3e42aaec75ffa9bec44, type: 3}
+    layerIndex: 4
+    useCache: 1
+  - uiName: 2
+    prefab: {fileID: 5436781847375960854, guid: 7729e37e319b805479c3a103b0fe942b, type: 3}
+    layerIndex: 3
+    useCache: 1
+  - uiName: 10
+    prefab: {fileID: 8465626630681528509, guid: 9275bb705063aff44b6e8fd63970d94e, type: 3}
+    layerIndex: 0
+    useCache: 1
+  - uiName: 11
+    prefab: {fileID: 6893643490813978663, guid: e0f9d9e4ded90e34a8bdfe8283110bc0, type: 3}
+    layerIndex: 0
+    useCache: 0
+  - uiName: 12
+    prefab: {fileID: 4995181241466279622, guid: 4a1d5f5b12d58994b9f33516b7928a15, type: 3}
+    layerIndex: 0
+    useCache: 1
+  - uiName: 13
+    prefab: {fileID: 7439480991650637268, guid: fae10f56f4878ce4b8c30c5d70962dd4, type: 3}
+    layerIndex: 0
+    useCache: 0
+  - uiName: 14
+    prefab: {fileID: 5636999936492797623, guid: 43f4471bafa93854fb573a99707ee3b7, type: 3}
+    layerIndex: 0
+    useCache: 0
+  - uiName: 15
+    prefab: {fileID: 6654436099281488885, guid: f678bb438f8efb742baca90fc0a0f51f, type: 3}
+    layerIndex: 1
+    useCache: 0
+  - uiName: 20
+    prefab: {fileID: 1330571614255028986, guid: 386af3edfcbea0c49a2bbc4544f6a4e8, type: 3}
+    layerIndex: 1
+    useCache: 0
+  - uiName: 21
+    prefab: {fileID: 3003134870180933596, guid: 3e8c8500af14d8e44b719c74d91a3993, type: 3}
+    layerIndex: 1
+    useCache: 0
+  - uiName: 22
+    prefab: {fileID: 3453800632626469590, guid: 7175451e71631a042b1343316ef6074d, type: 3}
+    layerIndex: 1
+    useCache: 0
+  - uiName: 23
+    prefab: {fileID: 6612745045408369673, guid: 3d37b83a2585ca842b4158d69e684856, type: 3}
+    layerIndex: 1
+    useCache: 0
+  - uiName: 24
+    prefab: {fileID: 4251737925372598558, guid: ce405eaa6628d3443a606b1e3379b6b2, type: 3}
+    layerIndex: 1
+    useCache: 0
+  - uiName: 30
+    prefab: {fileID: 1498241120590699112, guid: 3c8cfd5e8592ef146a6d40d2ad06f102, type: 3}
+    layerIndex: 2
+    useCache: 1

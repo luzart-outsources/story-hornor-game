@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0526cf07aa76fe74f94735dbb15f626e, type: 3}
+  m_Name: Dlg_Wife
+  m_EditorClassIdentifier: 
+  dialogueId: wife_talk
+  lines:
+  - character: {fileID: 11400000, guid: a33770aae572c7143bf9f60ae42b648e, type: 2}
+    text: Toi khong biet chuyen gi da xay ra...
+    typingSpeed: 30
+    waitForInput: 1
+  - character: {fileID: 11400000, guid: a33770aae572c7143bf9f60ae42b648e, type: 2}
+    text: Chong toi da di ngu som dem qua.
+    typingSpeed: 30
+    waitForInput: 1
+  - character: {fileID: 11400000, guid: 9b89d477ed6fc0d4f93157527a06fd71, type: 2}
+    text: Ba co nghe thay tieng dong gi khong?
+    typingSpeed: 30
+    waitForInput: 1
+  - character: {fileID: 11400000, guid: a33770aae572c7143bf9f60ae42b648e, type: 2}
+    text: Khong... toi cung da ngu.
+    typingSpeed: 30
+    waitForInput: 1
+  autoAdvance: 0
+  autoAdvanceDelay: 2

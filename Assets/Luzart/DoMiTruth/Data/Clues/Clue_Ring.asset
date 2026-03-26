@@ -9,15 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 977d3f0e7cd5f9a41a0bf29ac60a267c, type: 3}
-  m_Name: UIRegistry
+  m_Script: {fileID: 11500000, guid: 6a65966da1dce9e45aa19f63e20bf893, type: 3}
+  m_Name: Clue_Ring
   m_EditorClassIdentifier: 
-  uiConfigs:
-  - viewId: 
-    layer: 0
-    loadMode: 0
-    prefab: {fileID: 0}
-    addressablePath: 
-    enableCaching: 0
-    enablePooling: 0
-    poolSize: 0
+  clueId: Clue_Ring
+  clueName: Nhan Cuoi
+  clueImage: {fileID: 0}
+  description: Chiec nhan cuoi bi giau trong ngan keo khoa.
+  category: 0

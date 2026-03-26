@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56d13fdb062117a4ab8569f6548c9c0a, type: 3}
+  m_Name: Room_Shed
+  m_EditorClassIdentifier: 
+  roomId: Room_Shed
+  roomName: Nha Kho
+  backgroundImage: {fileID: 0}
+  backgroundSize: {x: 2560, y: 1440}
+  interactables:
+  - data: {fileID: 11400000, guid: 8a637bece4785944496b1b753413d536, type: 2}
+    positionOnBackground: {x: -200, y: 100}
+  - data: {fileID: 11400000, guid: 5addc9882265af844935380dae188c3e, type: 2}
+    positionOnBackground: {x: 300, y: 50}
+  entryDialogue: {fileID: 0}

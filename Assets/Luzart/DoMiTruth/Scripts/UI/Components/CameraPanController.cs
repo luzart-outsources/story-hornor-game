@@ -1,0 +1,62 @@
+namespace Luzart
+{
+    using UnityEngine;
+    using UnityEngine.EventSystems;
+
+    public class CameraPanController : MonoBehaviour, IDragHandler, IBeginDragHandler
+    {
+        [SerializeField] private RectTransform backgroundRect;
+        [SerializeField] private RectTransform viewportRect;
+
+        private Vector2 dragStartPos;
+        private Vector2 bgStartPos;
+        private Vector2 minBounds;
+        private Vector2 maxBounds;
+
+        public void Setup(Vector2 backgroundSize)
+        {
+            if (backgroundRect == null) return;
+
+            backgroundRect.sizeDelta = backgroundSize;
+            CalculateBounds();
+            ClampPosition();
+        }
+
+        private void CalculateBounds()
+        {
+            if (backgroundRect == null || viewportRect == null) return;
+
+            var viewportSize = viewportRect.rect.size;
+            var bgSize = backgroundRect.sizeDelta;
+
+            float halfDiffX = (bgSize.x - viewportSize.x) * 0.5f;
+            float halfDiffY = (bgSize.y - viewportSize.y) * 0.5f;
+
+            minBounds = new Vector2(-Mathf.Max(0, halfDiffX), -Mathf.Max(0, halfDiffY));
+            maxBounds = new Vector2(Mathf.Max(0, halfDiffX), Mathf.Max(0, halfDiffY));
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            dragStartPos = eventData.position;
+            bgStartPos = backgroundRect.anchoredPosition;
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            Vector2 delta = eventData.position - dragStartPos;
+            backgroundRect.anchoredPosition = bgStartPos + delta;
+            ClampPosition();
+        }
+
+        private void ClampPosition()
+        {
+            if (backgroundRect == null) return;
+
+            var pos = backgroundRect.anchoredPosition;
+            pos.x = Mathf.Clamp(pos.x, minBounds.x, maxBounds.x);
+            pos.y = Mathf.Clamp(pos.y, minBounds.y, maxBounds.y);
+            backgroundRect.anchoredPosition = pos;
+        }
+    }
+}

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a2a88cfcd500894cb610109e9f1fcbf, type: 3}
+  m_Name: IO_Safe
+  m_EditorClassIdentifier: 
+  objectId: IO_Safe
+  interactType: 2
+  hitboxSize: {x: 100, y: 100}
+  isOneTimeOnly: 0
+  highlightSprite: {fileID: 0}
+  clue: {fileID: 0}
+  dialogue: {fileID: 0}
+  lockConfig: {fileID: 11400000, guid: 307be277980b19c41b6604a04e226ea7, type: 2}
+  onUnlockSuccess:
+  - {fileID: 11400000, guid: cdb503010d1c6f944994696157e5729b, type: 2}
+  - {fileID: 11400000, guid: b9647e947aa077a4bbb95cf699374ca4, type: 2}
+  onUnlockFail:
+  - {fileID: 11400000, guid: 3f31f9dbacdb77e419049beec34bacd4, type: 2}
