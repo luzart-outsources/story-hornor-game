@@ -15,6 +15,9 @@ MonoBehaviour:
   introCutscene: {fileID: 0}
   cutsceneDuration: 30
   skipButtonDelay: 3
+  briefingDialogue: {fileID: 11400000, guid: c2f18295f3d61d64684f4acd62cc8c90, type: 2}
+  briefingNPCSprite: {fileID: 0}
+  briefingNPCLabel: POLICE
   allMaps:
   - {fileID: 11400000, guid: 8b3809973bbdbee42909537db90ce45b, type: 2}
   - {fileID: 11400000, guid: da7e51e37fb187d4fb488868580b13ef, type: 2}
