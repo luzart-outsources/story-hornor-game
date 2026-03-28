@@ -15,6 +15,10 @@ namespace Luzart
         [Header("Continue Toggle")]
         [SerializeField] private SelectToggleGameObject continueToggle;
 
+        [Header("Hover Effects")]
+        [Tooltip("Gắn tất cả ButtonHoverSelect của các button vào đây để tạo group hover.")]
+        [SerializeField] private ButtonHoverSelect[] hoverButtons;
+
         protected override void Setup()
         {
             base.Setup();
@@ -23,12 +27,36 @@ namespace Luzart
             GameUtil.ButtonOnClick(btnSettings, OnClickSettings);
             GameUtil.ButtonOnClick(btnGuide, OnClickGuide);
             GameUtil.ButtonOnClick(btnExit, OnClickExit);
+
+            SetupHoverGroup();
+        }
+
+        private void SetupHoverGroup()
+        {
+            if (hoverButtons == null || hoverButtons.Length == 0) return;
+
+            for (int i = 0; i < hoverButtons.Length; i++)
+            {
+                if (hoverButtons[i] != null)
+                    hoverButtons[i].SetGroup(hoverButtons);
+            }
         }
 
         public override void Show(System.Action onHideDone)
         {
             base.Show(onHideDone);
             RefreshContinueButton();
+            ResetAllHover();
+        }
+
+        private void ResetAllHover()
+        {
+            if (hoverButtons == null) return;
+            for (int i = 0; i < hoverButtons.Length; i++)
+            {
+                if (hoverButtons[i] != null)
+                    hoverButtons[i].Deselect();
+            }
         }
 
         private void RefreshContinueButton()

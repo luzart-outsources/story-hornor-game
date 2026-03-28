@@ -32,6 +32,35 @@ namespace Luzart
         public void OnCutsceneComplete()
         {
             UIManager.Instance.HideUiActive(UIName.Cutscene);
+            ShowBriefing();
+        }
+
+        public void ShowBriefing()
+        {
+            var briefing = gameConfig != null ? gameConfig.briefingDialogue : null;
+            if (briefing == null || briefing.lines.Count == 0)
+            {
+                ShowMapSelection();
+                return;
+            }
+
+            var ui = UIManager.Instance.ShowUI<UIBriefing>(UIName.Briefing);
+            if (ui != null)
+            {
+                if (gameConfig.briefingNPCSprite != null)
+                    ui.SetNPCFullBody(gameConfig.briefingNPCSprite, gameConfig.briefingNPCLabel);
+
+                ui.StartBriefing(briefing, OnBriefingComplete);
+            }
+            else
+            {
+                // Fallback nếu chưa có prefab Briefing → dùng DialogueManager
+                DialogueManager.Instance.StartDialogue(briefing, OnBriefingComplete);
+            }
+        }
+
+        private void OnBriefingComplete()
+        {
             ShowMapSelection();
         }
 

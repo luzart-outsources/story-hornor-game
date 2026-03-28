@@ -278,12 +278,14 @@ namespace Luzart
         MapSelection = 13,
         Investigation = 14,
         Notebook = 15,
+        Briefing = 16,
         // Popups
         Settings = 20,
         Guide = 21,
         ClueDetail = 22,
         LockPuzzle = 23,
         ConfirmExit = 24,
+        Pause = 25,
         // HUD
         InvestigationHud = 30,
     }

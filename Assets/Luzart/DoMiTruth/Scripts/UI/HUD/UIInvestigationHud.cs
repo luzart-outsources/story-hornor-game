@@ -71,7 +71,7 @@ namespace Luzart
 
         private void OnClickSettings()
         {
-            UIManager.Instance.ShowUI(UIName.Settings);
+            UIManager.Instance.ShowUI(UIName.Pause);
         }
 
         private void OnClickNotebook()
