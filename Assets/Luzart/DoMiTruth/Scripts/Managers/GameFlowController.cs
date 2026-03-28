@@ -47,9 +47,6 @@ namespace Luzart
             var ui = UIManager.Instance.ShowUI<UIBriefing>(UIName.Briefing);
             if (ui != null)
             {
-                if (gameConfig.briefingNPCSprite != null)
-                    ui.SetNPCFullBody(gameConfig.briefingNPCSprite, gameConfig.briefingNPCLabel);
-
                 ui.StartBriefing(briefing, OnBriefingComplete);
             }
             else

@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: Char_Police
   m_EditorClassIdentifier: 
   characterId: Char_Police
-  characterName: Canh Sat Phong
-  portrait: {fileID: 0}
+  characterName: POLICE
+  portrait: {fileID: 21300000, guid: 31767da589e044165812330356edca9a, type: 3}
+  fullBodySprite: {fileID: 21300000, guid: 31767da589e044165812330356edca9a, type: 3}
+  portraitAnimator: {fileID: 0}
+  fullBodyAnimator: {fileID: 0}
   nameColor: {r: 0.5, g: 0.5, b: 1, a: 1}

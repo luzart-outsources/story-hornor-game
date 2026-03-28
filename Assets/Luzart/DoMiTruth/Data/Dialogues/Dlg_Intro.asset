@@ -14,12 +14,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dialogueId: intro
   lines:
-  - character: {fileID: 11400000, guid: 9b89d477ed6fc0d4f93157527a06fd71, type: 2}
-    text: Day la hien truong vu an. Toi can dieu tra ky.
+  - character: {fileID: 11400000, guid: 44aca2fbae16e9a44961a10fa930477c, type: 2}
+    text: '- Comrade, a dismemberment homicide has been discovered at the Indochine
+      villa. The victim has been tentatively identified as the OWNER of the house'
+    typingSpeed: 30
+    waitForInput: 1
+  - character: {fileID: 11400000, guid: 44aca2fbae16e9a44961a10fa930477c, type: 2}
+    text: '- Four suspects with both motive and capability have been identified'
+    typingSpeed: 30
+    waitForInput: 1
+  - character: {fileID: 11400000, guid: 44aca2fbae16e9a44961a10fa930477c, type: 2}
+    text: '- The case still contains many blind spots. Proceed with caution. These
+      are the essential information of the case'
     typingSpeed: 30
     waitForInput: 1
   - character: {fileID: 11400000, guid: 9b89d477ed6fc0d4f93157527a06fd71, type: 2}
-    text: Hay bat dau tu phong khach.
+    text: ' - ...'
+    typingSpeed: 30
+    waitForInput: 1
+  - character: {fileID: 11400000, guid: 9b89d477ed6fc0d4f93157527a06fd71, type: 2}
+    text: ' - ...'
+    typingSpeed: 30
+    waitForInput: 1
+  - character: {fileID: 11400000, guid: 9b89d477ed6fc0d4f93157527a06fd71, type: 2}
+    text: '- Thank you sir'
     typingSpeed: 30
     waitForInput: 1
   autoAdvance: 0

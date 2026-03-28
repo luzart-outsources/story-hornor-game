@@ -8,6 +8,7 @@ namespace Luzart
     public class UINPCDialogue : UIBase
     {
         [SerializeField] private Image imgPortrait;
+        [SerializeField] private Animator animPortrait;
         [SerializeField] private TMP_Text txtName;
         [SerializeField] private TMP_Text txtDialogue;
         [SerializeField] private Button btnNext;
@@ -22,8 +23,9 @@ namespace Luzart
         {
             if (line.character != null)
             {
-                if (imgPortrait != null && line.character.portrait != null)
-                    imgPortrait.sprite = line.character.portrait;
+                // Portrait: animator hoặc sprite
+                if (imgPortrait != null)
+                    SetupAnimatorOrSprite(line.character.portraitAnimator, line.character.portrait);
 
                 if (txtName != null)
                 {
@@ -37,6 +39,29 @@ namespace Luzart
                 float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
                 var tweener = txtDialogue.DOSetTextCharByChar(line.text, speed);
                 DialogueManager.Instance.SetTypingTweener(tweener);
+            }
+        }
+
+        private void SetupAnimatorOrSprite(RuntimeAnimatorController controller, Sprite fallbackSprite)
+        {
+            if (animPortrait != null)
+            {
+                if (controller != null)
+                {
+                    animPortrait.runtimeAnimatorController = controller;
+                    animPortrait.enabled = true;
+                }
+                else
+                {
+                    animPortrait.enabled = false;
+                    if (fallbackSprite != null)
+                        imgPortrait.sprite = fallbackSprite;
+                }
+            }
+            else
+            {
+                if (fallbackSprite != null)
+                    imgPortrait.sprite = fallbackSprite;
             }
         }
 

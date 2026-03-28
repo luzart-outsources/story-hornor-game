@@ -90,9 +90,10 @@ GameFlowController
   |      OnCutsceneComplete -> ShowBriefing
   |
   +--> Man 3: ShowBriefing() --> UIBriefing (FULL SCREEN)
-  |      NPC Cong an full body ben trai
+  |      2 NPC full body 2 ben (auto-detect tu dialogue lines)
+  |      Ai noi thi highlight (alpha 1, scale 1.02), nguoi con lai dim (alpha 0.4)
   |      Case board o giua
-  |      Dialogue box duoi phai voi portrait + text
+  |      Dialogue box o duoi voi portrait + text
   |      Ket thuc -> OnBriefingComplete -> ShowMapSelection
   |      Fallback: neu chua co prefab -> dung DialogueManager
   |
@@ -120,8 +121,6 @@ GameFlowController
 - cutsceneDuration: float (30s)
 - skipButtonDelay: float (3s)
 - briefingDialogue: DialogueSequenceSO  -> Dlg_Intro cho man Cong an
-- briefingNPCSprite: Sprite             -> Full body Cong an
-- briefingNPCLabel: string              -> "POLICE"
 - allMaps: List<MapSO>
 - panSpeed: float (5)
 - panEdgeThreshold: float (50px)
@@ -192,9 +191,13 @@ GameFlowController
 ```
 - characterId: string
 - characterName: string
-- portrait: Sprite
+- portrait: Sprite                           (fallback khi khong co animator)
+- fullBodySprite: Sprite                     (fallback khi khong co animator)
+- portraitAnimator: RuntimeAnimatorController (optional - animator cho portrait nho)
+- fullBodyAnimator: RuntimeAnimatorController (optional - animator cho full body)
 - nameColor: Color
 ```
+Logic: Neu co AnimatorController -> dung Animator. Neu null -> dung Sprite tinh.
 
 ### LockConfigSO
 ```
@@ -276,7 +279,7 @@ InvestigationHud=30
 |--------|-------|
 | UIMainMenu | 5 buttons (Play, Continue, Settings, Guide, Exit) + ButtonHoverSelect group |
 | UICutscene | VideoPlayer + skip button |
-| UIBriefing | Full screen: NPC full body + case board + dialogue box. Tu quan ly dialogue flow |
+| UIBriefing | Full screen: 2 NPC full body 2 ben (highlight ai dang noi) + case board + dialogue box. Auto-detect characters tu dialogue lines |
 | UIMapSelection | Grid MapSelectionItem, click -> OnMapSelected |
 | UIInvestigation | Room background + spawn InteractableObjects + CameraPanController |
 | UINPCDialogue | Portrait + name + text (typing anim) + next button |
@@ -385,6 +388,7 @@ BaseSelect (abstract) -> IBaseSwitch, IBaseToggle
 |-----------|--------|----------|
 | Clue collect fly | ClueCollectAnimation | Scale out -> move to notebook -> scale down + fade. 0.8s |
 | Text typing | UINPCDialogue / UIBriefing | DOTween char-by-char. 30 chars/sec default |
+| NPC character anim | UIBriefing / UINPCDialogue | RuntimeAnimatorController (optional). Fallback to static Sprite |
 | Interactive hover | InteractableObject | Scale 1.0 -> 1.05 |
 | Wrong answer shake | UILockPuzzle | DOShakePosition 0.3s, 10px, 20 vibrato |
 | Button hover | ButtonHoverSelect | SelectToggleGameObject bat/tat Normal/Hover GO. Hover scale 1.06x |
