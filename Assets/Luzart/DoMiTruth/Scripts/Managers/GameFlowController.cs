@@ -74,12 +74,49 @@ namespace Luzart
             GameDataManager.Instance.Data.currentMapId = map.mapId;
             GameDataManager.Instance.Save();
 
-            UIManager.Instance.HideUiActive(UIName.MapSelection);
-
             var room = map.rooms[0];
-            InvestigationManager.Instance.LoadRoom(room);
 
-            UIManager.Instance.ShowUI(UIName.InvestigationHud);
+            // Circle wipe transition
+            if (UITransition.Instance != null)
+            {
+                UITransition.Instance.PlayTransition(
+                    onMidpoint: () =>
+                    {
+                        UIManager.Instance.HideUiActive(UIName.MapSelection);
+                        InvestigationManager.Instance.LoadRoom(room);
+                        UIManager.Instance.ShowUI(UIName.InvestigationHud);
+                    });
+            }
+            else
+            {
+                // Fallback không có transition
+                UIManager.Instance.HideUiActive(UIName.MapSelection);
+                InvestigationManager.Instance.LoadRoom(room);
+                UIManager.Instance.ShowUI(UIName.InvestigationHud);
+            }
+        }
+
+        /// <summary>
+        /// Quay về MapSelector từ room (có transition).
+        /// </summary>
+        public void ReturnToMapSelection()
+        {
+            if (UITransition.Instance != null)
+            {
+                UITransition.Instance.PlayTransition(
+                    onMidpoint: () =>
+                    {
+                        InvestigationManager.Instance.UnloadRoom();
+                        UIManager.Instance.HideUiActive(UIName.InvestigationHud);
+                        UIManager.Instance.ShowUI(UIName.MapSelection);
+                    });
+            }
+            else
+            {
+                InvestigationManager.Instance.UnloadRoom();
+                UIManager.Instance.HideUiActive(UIName.InvestigationHud);
+                UIManager.Instance.ShowUI(UIName.MapSelection);
+            }
         }
 
         public void ReturnToMainMenu()

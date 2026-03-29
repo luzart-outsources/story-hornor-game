@@ -100,6 +100,39 @@ namespace Luzart
                     text.text = content;
                 });
         }
+
+        /// <summary>
+        /// DOSetTextCharByChar với callback mỗi ký tự mới (dùng cho dialogue SFX).
+        /// </summary>
+        public static Tweener DOSetTextCharByChar(
+            this TMP_Text text,
+            string content,
+            float charPerSecond,
+            Action onCharAdded)
+        {
+            if (text == null) return null;
+            if (charPerSecond <= 0f) charPerSecond = 1f;
+
+            text.text = string.Empty;
+            int totalChars = content.Length;
+            float duration = totalChars / charPerSecond;
+            int lastIndex = 0;
+
+            return DOTween.To(
+                    () => lastIndex,
+                    x =>
+                    {
+                        if (x <= lastIndex) return;
+                        lastIndex = x;
+                        text.text = content.Substring(0, lastIndex);
+                        onCharAdded?.Invoke();
+                    },
+                    totalChars,
+                    duration
+                )
+                .SetEase(Ease.Linear)
+                .OnComplete(() => { text.text = content; });
+        }
         /// <summary>
         /// 
         /// </summary>

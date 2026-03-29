@@ -12,6 +12,7 @@ namespace Luzart.Editor
         private const string DATA_ROOT = "Assets/Luzart/DoMiTruth/Data";
         private const string ANIM_ROOT = "Assets/Luzart/DoMiTruth/Animation";
         private const string PREFAB_ROOT = "Assets/Luzart/DoMiTruth/Prefabs";
+        private const string SFX_ROOT = "Assets/Art/Sound effects";
         private const string ART_ROOT = "Assets/Art/SOURCE CHÍNH THỨC";
 
         // Colors matching briefing style
@@ -47,6 +48,16 @@ namespace Luzart.Editor
 
             EditorUtility.DisplayDialog("✅ GDD Data Created!",
                 string.Join("\n", log), "OK");
+        }
+
+        [MenuItem("DoMiTruth/🔊 Create All Sound", false, 104)]
+        public static void CreateAllSound()
+        {
+            var log = new List<string>();
+            AssignSFXToGameConfig(log);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorUtility.DisplayDialog("✅ Sound Setup Done!", string.Join("\n", log), "OK");
         }
 
         [MenuItem("DoMiTruth/Create NPC Dialogue Prefab", false, 103)]
@@ -1075,6 +1086,55 @@ namespace Luzart.Editor
 
         private const string ART_STORAGE = "Assets/Art/SOURCE CHÍNH THỨC/Map Storage/Tách layer két sắt";
 
+        [MenuItem("DoMiTruth/🔄 Create Transition Prefab", false, 107)]
+        public static void CreateTransitionPrefab()
+        {
+            var log = new List<string>();
+            var go = CreateTransitionPrefab_Internal(log);
+            if (go == null) return;
+            string path = PREFAB_ROOT + "/Components/UITransition.prefab";
+            EnsureDir(path);
+            PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorUtility.DisplayDialog("Done!", string.Join("\n", log) +
+                "\n\nKéo prefab UITransition vào field 'Transition Prefab' trên GameBootstrap.", "OK");
+        }
+
+        [MenuItem("DoMiTruth/📓 Create Notebook Prefab", false, 106)]
+        public static void CreateNotebookPrefab()
+        {
+            var log = new List<string>();
+            var go = CreateNotebookPrefab_Internal(log);
+            if (go == null) return;
+            string path = PREFAB_ROOT + "/Screens/UINotebook.prefab";
+            EnsureDir(path);
+            PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            AssetDatabase.Refresh();
+
+            // Register to UIRegistry
+            var registry = AssetDatabase.LoadAssetAtPath<UIRegistrySO>(
+                DATA_ROOT + "/Config/UIRegistry.asset");
+            if (registry != null)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                var uiBase = prefab.GetComponent<UIBase>();
+                if (uiBase != null)
+                {
+                    var regSO = new SerializedObject(registry);
+                    var entries = regSO.FindProperty("entries");
+                    RegisterEntry(entries, UIName.Notebook, uiBase);
+                    regSO.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(registry);
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            EditorUtility.DisplayDialog("Done!", string.Join("\n", log), "OK");
+        }
+
         [MenuItem("DoMiTruth/Create Lock Puzzle Prefab", false, 105)]
         public static void CreateLockPuzzlePrefab()
         {
@@ -1296,6 +1356,373 @@ namespace Luzart.Editor
 
             log?.Add("✅ UILockPuzzle prefab created (safe bg + numpad 0-9 + DEL + OK)");
             return root;
+        }
+
+        // ================================================================
+        //  NOTEBOOK PREFAB
+        // ================================================================
+
+        private const string ART_NOTEBOOK = "Assets/Art/SOURCE CHÍNH THỨC/UI/Notebook/Elements";
+
+        public static GameObject CreateNotebookPrefab_Internal(List<string> log)
+        {
+            // Load sprites
+            var spBiaSo = EnsureSpriteImport(ART_NOTEBOOK + "/bia so.png");
+            var spTrang1 = EnsureSpriteImport(ART_NOTEBOOK + "/trang 1 ghi thong tin note cua props.png");
+            var spPolaroidProp = EnsureSpriteImport(ART_NOTEBOOK + "/anh prop.png");
+            var spNameTag = EnsureSpriteImport(ART_NOTEBOOK + "/ten props.png");
+
+            var root = new GameObject("UINotebook", typeof(RectTransform), typeof(CanvasGroup));
+            StretchFull(root.GetComponent<RectTransform>());
+
+            // ── Dark overlay background ──
+            var overlay = MakeUI("Overlay", root.transform);
+            overlay.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.7f);
+            StretchFull(overlay.GetComponent<RectTransform>());
+
+            // ── Notebook Background (bìa sổ mở 2 trang, center) ──
+            var notebookBg = MakeUI("NotebookBg", root.transform);
+            var nbRect = notebookBg.GetComponent<RectTransform>();
+            nbRect.anchorMin = new Vector2(0.5f, 0.5f);
+            nbRect.anchorMax = new Vector2(0.5f, 0.5f);
+            nbRect.pivot = new Vector2(0.5f, 0.5f);
+            nbRect.sizeDelta = new Vector2(900f, 600f);
+            var nbImg = notebookBg.AddComponent<Image>();
+            if (spBiaSo != null) nbImg.sprite = spBiaSo;
+            nbImg.preserveAspect = true;
+
+            // ── Trang trái — Description ──
+            var leftPage = MakeUI("LeftPage", notebookBg.transform);
+            var lpRect = leftPage.GetComponent<RectTransform>();
+            lpRect.anchorMin = new Vector2(0.03f, 0.05f);
+            lpRect.anchorMax = new Vector2(0.48f, 0.92f);
+            var leftPageImg = leftPage.AddComponent<Image>();
+            if (spTrang1 != null) leftPageImg.sprite = spTrang1;
+            leftPageImg.preserveAspect = false;
+            leftPageImg.raycastTarget = false;
+
+            // Description text trên trang trái
+            var descGo = MakeUI("TxtDescription", leftPage.transform);
+            var descRect = descGo.GetComponent<RectTransform>();
+            StretchFull(descRect);
+            descRect.offsetMin = new Vector2(25f, 30f);
+            descRect.offsetMax = new Vector2(-25f, -30f);
+            var descTMP = descGo.AddComponent<TextMeshProUGUI>();
+            descTMP.text = "";
+            descTMP.fontSize = 16f;
+            descTMP.alignment = TextAlignmentOptions.TopLeft;
+            descTMP.color = new Color(0.2f, 0.15f, 0.1f, 1f);
+            descTMP.raycastTarget = false;
+
+            // ── Trang phải ──
+            var rightPage = MakeUI("RightPage", notebookBg.transform);
+            var rpRect = rightPage.GetComponent<RectTransform>();
+            rpRect.anchorMin = new Vector2(0.52f, 0.05f);
+            rpRect.anchorMax = new Vector2(0.97f, 0.92f);
+            var rightPageImg = rightPage.AddComponent<Image>();
+            rightPageImg.color = new Color(0.75f, 0.73f, 0.7f, 1f);
+            rightPageImg.raycastTarget = false;
+
+            // Polaroid frame (trên cùng trang phải)
+            var polaroid = MakeUI("PolaroidFrame", rightPage.transform);
+            var polRect = polaroid.GetComponent<RectTransform>();
+            polRect.anchorMin = new Vector2(0.1f, 0.35f);
+            polRect.anchorMax = new Vector2(0.9f, 0.95f);
+            var polImg = polaroid.AddComponent<Image>();
+            if (spPolaroidProp != null) polImg.sprite = spPolaroidProp;
+            polImg.preserveAspect = true;
+            polImg.raycastTarget = false;
+
+            // Photo bên trong polaroid
+            var photo = MakeUI("CluePhoto", polaroid.transform);
+            var phRect = photo.GetComponent<RectTransform>();
+            phRect.anchorMin = new Vector2(0.08f, 0.12f);
+            phRect.anchorMax = new Vector2(0.92f, 0.88f);
+            var phImg = photo.AddComponent<Image>();
+            phImg.preserveAspect = true;
+            phImg.color = Color.white;
+            phImg.raycastTarget = false;
+
+            // Name tag (giấy rách — dưới polaroid)
+            var nameTag = MakeUI("NameTag", rightPage.transform);
+            var ntRect = nameTag.GetComponent<RectTransform>();
+            ntRect.anchorMin = new Vector2(0.1f, 0.08f);
+            ntRect.anchorMax = new Vector2(0.9f, 0.32f);
+            var ntImg = nameTag.AddComponent<Image>();
+            if (spNameTag != null) ntImg.sprite = spNameTag;
+            ntImg.preserveAspect = true;
+            ntImg.raycastTarget = false;
+
+            // Clue name text trên name tag
+            var nameGo = MakeUI("TxtName", nameTag.transform);
+            var nameRect = nameGo.GetComponent<RectTransform>();
+            StretchFull(nameRect);
+            nameRect.offsetMin = new Vector2(10f, 5f);
+            nameRect.offsetMax = new Vector2(-10f, -20f);
+            var nameTMP = nameGo.AddComponent<TextMeshProUGUI>();
+            nameTMP.text = "";
+            nameTMP.fontSize = 16f;
+            nameTMP.fontStyle = FontStyles.Bold;
+            nameTMP.alignment = TextAlignmentOptions.Center;
+            nameTMP.color = new Color(0.2f, 0.15f, 0.1f, 1f);
+            nameTMP.raycastTarget = false;
+
+            // Category text (nhỏ dưới name)
+            var catGo = MakeUI("TxtCategory", nameTag.transform);
+            var catRect = catGo.GetComponent<RectTransform>();
+            catRect.anchorMin = new Vector2(0.1f, 0f);
+            catRect.anchorMax = new Vector2(0.9f, 0.3f);
+            var catTMP = catGo.AddComponent<TextMeshProUGUI>();
+            catTMP.text = "";
+            catTMP.fontSize = 12f;
+            catTMP.fontStyle = FontStyles.Italic;
+            catTMP.alignment = TextAlignmentOptions.Center;
+            catTMP.color = new Color(0.4f, 0.35f, 0.3f, 0.8f);
+            catTMP.raycastTarget = false;
+
+            // ── Tab Buttons (trên notebook) ──
+            var tabArea = MakeUI("TabButtons", notebookBg.transform);
+            var taRect = tabArea.GetComponent<RectTransform>();
+            taRect.anchorMin = new Vector2(0.15f, 0.93f);
+            taRect.anchorMax = new Vector2(0.85f, 1f);
+            var hlg = tabArea.AddComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 10f;
+            hlg.childAlignment = TextAnchor.MiddleCenter;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = true;
+
+            var btnCluesGo = MakeUI("BtnCluesTab", tabArea.transform);
+            btnCluesGo.AddComponent<Image>().color = new Color(0.6f, 0.45f, 0.3f, 0.9f);
+            var btnClues = btnCluesGo.AddComponent<Button>();
+            var clueTabLabel = MakeUI("Label", btnCluesGo.transform);
+            StretchFull(clueTabLabel.GetComponent<RectTransform>());
+            var clueTabTMP = clueTabLabel.AddComponent<TextMeshProUGUI>();
+            clueTabTMP.text = "EVIDENCE";
+            clueTabTMP.fontSize = 14f;
+            clueTabTMP.fontStyle = FontStyles.Bold;
+            clueTabTMP.alignment = TextAlignmentOptions.Center;
+            clueTabTMP.color = Color.white;
+            clueTabTMP.raycastTarget = false;
+
+            var btnCharsGo = MakeUI("BtnCharactersTab", tabArea.transform);
+            btnCharsGo.AddComponent<Image>().color = new Color(0.4f, 0.35f, 0.3f, 0.9f);
+            var btnChars = btnCharsGo.AddComponent<Button>();
+            var charTabLabel = MakeUI("Label", btnCharsGo.transform);
+            StretchFull(charTabLabel.GetComponent<RectTransform>());
+            var charTabTMP = charTabLabel.AddComponent<TextMeshProUGUI>();
+            charTabTMP.text = "SUSPECTS";
+            charTabTMP.fontSize = 14f;
+            charTabTMP.fontStyle = FontStyles.Bold;
+            charTabTMP.alignment = TextAlignmentOptions.Center;
+            charTabTMP.color = Color.white;
+            charTabTMP.raycastTarget = false;
+
+            // ── Navigation Buttons (dưới notebook) ──
+            // Prev (trái)
+            var prevGo = MakeUI("BtnPrevPage", notebookBg.transform);
+            var prevRect = prevGo.GetComponent<RectTransform>();
+            prevRect.anchorMin = new Vector2(0f, 0f);
+            prevRect.anchorMax = new Vector2(0f, 0f);
+            prevRect.pivot = new Vector2(0f, 0f);
+            prevRect.sizeDelta = new Vector2(60f, 40f);
+            prevRect.anchoredPosition = new Vector2(20f, -10f);
+            prevGo.AddComponent<Image>().color = new Color(0.5f, 0.4f, 0.3f, 0.8f);
+            var btnPrev = prevGo.AddComponent<Button>();
+            var prevLabel = MakeUI("Label", prevGo.transform);
+            StretchFull(prevLabel.GetComponent<RectTransform>());
+            var prevTMP = prevLabel.AddComponent<TextMeshProUGUI>();
+            prevTMP.text = "◀";
+            prevTMP.fontSize = 22f;
+            prevTMP.alignment = TextAlignmentOptions.Center;
+            prevTMP.color = Color.white;
+            prevTMP.raycastTarget = false;
+
+            // Next (phải)
+            var nextGo = MakeUI("BtnNextPage", notebookBg.transform);
+            var nextRect = nextGo.GetComponent<RectTransform>();
+            nextRect.anchorMin = new Vector2(1f, 0f);
+            nextRect.anchorMax = new Vector2(1f, 0f);
+            nextRect.pivot = new Vector2(1f, 0f);
+            nextRect.sizeDelta = new Vector2(60f, 40f);
+            nextRect.anchoredPosition = new Vector2(-20f, -10f);
+            nextGo.AddComponent<Image>().color = new Color(0.5f, 0.4f, 0.3f, 0.8f);
+            var btnNext = nextGo.AddComponent<Button>();
+            var nextLabel = MakeUI("Label", nextGo.transform);
+            StretchFull(nextLabel.GetComponent<RectTransform>());
+            var nextTMP = nextLabel.AddComponent<TextMeshProUGUI>();
+            nextTMP.text = "▶";
+            nextTMP.fontSize = 22f;
+            nextTMP.alignment = TextAlignmentOptions.Center;
+            nextTMP.color = Color.white;
+            nextTMP.raycastTarget = false;
+
+            // Page number (giữa dưới)
+            var pageGo = MakeUI("TxtPageNumber", notebookBg.transform);
+            var pgRect = pageGo.GetComponent<RectTransform>();
+            pgRect.anchorMin = new Vector2(0.5f, 0f);
+            pgRect.anchorMax = new Vector2(0.5f, 0f);
+            pgRect.pivot = new Vector2(0.5f, 0f);
+            pgRect.sizeDelta = new Vector2(100f, 30f);
+            pgRect.anchoredPosition = new Vector2(0f, -10f);
+            var pgTMP = pageGo.AddComponent<TextMeshProUGUI>();
+            pgTMP.text = "1/1";
+            pgTMP.fontSize = 14f;
+            pgTMP.alignment = TextAlignmentOptions.Center;
+            pgTMP.color = new Color(0.4f, 0.35f, 0.3f, 1f);
+            pgTMP.raycastTarget = false;
+
+            // ── Close button (top right of overlay) ──
+            var closeGo = MakeUI("BtnClose", root.transform);
+            var clRect = closeGo.GetComponent<RectTransform>();
+            clRect.anchorMin = clRect.anchorMax = Vector2.one;
+            clRect.pivot = Vector2.one;
+            clRect.sizeDelta = new Vector2(50f, 50f);
+            clRect.anchoredPosition = new Vector2(-20f, -20f);
+            closeGo.AddComponent<Image>().color = new Color(0.5f, 0.2f, 0.15f, 0.9f);
+            var btnClose = closeGo.AddComponent<Button>();
+            var closeLbl = MakeUI("Label", closeGo.transform);
+            StretchFull(closeLbl.GetComponent<RectTransform>());
+            var closeTMP = closeLbl.AddComponent<TextMeshProUGUI>();
+            closeTMP.text = "X";
+            closeTMP.fontSize = 24f;
+            closeTMP.fontStyle = FontStyles.Bold;
+            closeTMP.alignment = TextAlignmentOptions.Center;
+            closeTMP.color = Color.white;
+            closeTMP.raycastTarget = false;
+
+            // ── Wire UINotebook ──
+            var ui = root.AddComponent<UINotebook>();
+            ui.uiName = UIName.Notebook;
+            var so = new SerializedObject(ui);
+            so.FindProperty("imgNotebookBg").objectReferenceValue = nbImg;
+            so.FindProperty("btnCluesTab").objectReferenceValue = btnClues;
+            so.FindProperty("btnCharactersTab").objectReferenceValue = btnChars;
+            so.FindProperty("imgLeftPage").objectReferenceValue = leftPageImg;
+            so.FindProperty("txtDescription").objectReferenceValue = descTMP;
+            so.FindProperty("imgRightPage").objectReferenceValue = rightPageImg;
+            so.FindProperty("imgPolaroidFrame").objectReferenceValue = polImg;
+            so.FindProperty("imgPhoto").objectReferenceValue = phImg;
+            so.FindProperty("imgNameTag").objectReferenceValue = ntImg;
+            so.FindProperty("txtName").objectReferenceValue = nameTMP;
+            so.FindProperty("txtCategory").objectReferenceValue = catTMP;
+            so.FindProperty("btnPrevPage").objectReferenceValue = btnPrev;
+            so.FindProperty("btnNextPage").objectReferenceValue = btnNext;
+            so.FindProperty("txtPageNumber").objectReferenceValue = pgTMP;
+            so.FindProperty("btnClose").objectReferenceValue = btnClose;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            log?.Add("✅ UINotebook prefab created (2 pages: left desc + right polaroid + nav)");
+            return root;
+        }
+
+        // ================================================================
+        //  TRANSITION PREFAB (Circle Wipe)
+        // ================================================================
+
+        public static GameObject CreateTransitionPrefab_Internal(List<string> log)
+        {
+            // Tìm hoặc tạo material
+            string shaderPath = "Assets/Luzart/DoMiTruth/Shaders/CircleWipe.shader";
+            var shader = AssetDatabase.LoadAssetAtPath<Shader>(shaderPath);
+            if (shader == null)
+            {
+                log?.Add("⚠️ CircleWipe.shader not found at " + shaderPath);
+                return null;
+            }
+
+            string matPath = "Assets/Luzart/DoMiTruth/Materials/Mat_CircleWipe.mat";
+            EnsureDir(matPath);
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            if (mat == null)
+            {
+                mat = new Material(shader);
+                mat.SetFloat("_Progress", 0f);
+                mat.SetColor("_Color", Color.black);
+                mat.SetFloat("_Softness", 0.15f);
+                AssetDatabase.CreateAsset(mat, matPath);
+            }
+
+            // Root — Canvas overlay riêng (sort order cao nhất)
+            var root = new GameObject("UITransition");
+            var canvas = root.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 9999;
+            root.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            root.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920f, 1080f);
+
+            // RawImage full screen với CircleWipe material
+            var wipeGo = new GameObject("WipeImage", typeof(RectTransform));
+            wipeGo.transform.SetParent(root.transform, false);
+            var wipeRect = wipeGo.GetComponent<RectTransform>();
+            wipeRect.anchorMin = Vector2.zero;
+            wipeRect.anchorMax = Vector2.one;
+            wipeRect.offsetMin = Vector2.zero;
+            wipeRect.offsetMax = Vector2.zero;
+            var wipeImg = wipeGo.AddComponent<RawImage>();
+            wipeImg.material = mat;
+            wipeImg.color = Color.white;
+            wipeImg.raycastTarget = false;
+            wipeGo.SetActive(false);
+
+            // UITransition component
+            var transition = root.AddComponent<UITransition>();
+            var so = new SerializedObject(transition);
+            so.FindProperty("wipeImage").objectReferenceValue = wipeImg;
+            so.FindProperty("closeDuration").floatValue = 0.6f;
+            so.FindProperty("openDuration").floatValue = 0.6f;
+            so.FindProperty("holdDuration").floatValue = 0.2f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            log?.Add("✅ UITransition prefab created (CircleWipe shader + overlay canvas)");
+            return root;
+        }
+
+        // ================================================================
+        //  SFX AUTO-ASSIGN
+        // ================================================================
+
+        private static void AssignSFXToGameConfig(List<string> log)
+        {
+            var config = AssetDatabase.LoadAssetAtPath<GameConfigSO>(
+                DATA_ROOT + "/Config/GameConfig.asset");
+            if (config == null)
+            {
+                log?.Add("⚠️ GameConfig.asset not found, skipped SFX assign");
+                return;
+            }
+
+            config.sfxDialogue = LoadAudioClip("Sound effect dialogue");
+            config.sfxMenuClick = LoadAudioClip("Sound lúc chọn các mục ở Menu (Settings Guide, Quitgame)");
+            config.sfxInteract = LoadAudioClip("Tuong tac do vat ingame");
+            config.sfxPasscodeInput = LoadAudioClip("Nhap mat khau ket sat");
+            config.sfxPasscodeWrong = LoadAudioClip("Sai mat khau");
+            config.sfxSafeOpen = LoadAudioClip("Sound mo ket sat");
+
+            EditorUtility.SetDirty(config);
+
+            int count = 0;
+            if (config.sfxDialogue != null) count++;
+            if (config.sfxMenuClick != null) count++;
+            if (config.sfxInteract != null) count++;
+            if (config.sfxPasscodeInput != null) count++;
+            if (config.sfxPasscodeWrong != null) count++;
+            if (config.sfxSafeOpen != null) count++;
+
+            log?.Add($"✅ SFX: {count}/6 audio clips assigned to GameConfig");
+        }
+
+        private static AudioClip LoadAudioClip(string fileName)
+        {
+            string path = SFX_ROOT + "/" + fileName + ".mp3";
+            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            if (clip == null)
+            {
+                // Try wav
+                path = SFX_ROOT + "/" + fileName + ".wav";
+                clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            }
+            return clip;
         }
 
         // ================================================================

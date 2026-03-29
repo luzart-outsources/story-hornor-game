@@ -67,6 +67,7 @@ namespace Luzart
             if (currentPasscode.Length >= maxDigits) return;
             currentPasscode += digit.ToString();
             UpdatePasscodeDisplay();
+            SoundManager.Instance?.PlayPasscodeInputSFX();
         }
 
         private void OnClickDelete()
@@ -142,11 +143,13 @@ namespace Luzart
         {
             if (string.Equals(currentPasscode, lockConfig.passcode, StringComparison.OrdinalIgnoreCase))
             {
+                SoundManager.Instance?.PlaySafeOpenSFX();
                 Hide();
                 onSuccess?.Invoke();
             }
             else
             {
+                SoundManager.Instance?.PlayPasscodeWrongSFX();
                 OnWrongPasscode();
                 onFail?.Invoke();
             }

@@ -160,6 +160,7 @@ namespace Luzart
         /// <summary>NPC trái nói → text trong case board.</summary>
         private void ShowLeftLine(DialogueLine line)
         {
+            SoundManager.Instance?.PlayDialogueSFX();
             // Ẩn dialogue box
             if (dialogueBoxRoot != null)
                 dialogueBoxRoot.SetActive(false);
@@ -176,6 +177,7 @@ namespace Luzart
         /// <summary>NPC phải nói → text trong dialogue box.</summary>
         private void ShowRightLine(DialogueLine line)
         {
+            SoundManager.Instance?.PlayDialogueSFX();
             // Hiện dialogue box
             if (dialogueBoxRoot != null)
                 dialogueBoxRoot.SetActive(true);

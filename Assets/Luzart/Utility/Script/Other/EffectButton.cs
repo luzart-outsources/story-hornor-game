@@ -8,6 +8,8 @@ namespace Luzart
     public class EffectButton : MonoBehaviour, IPointerUpHandler, IPointerDownHandler
     {
         public bool isAutoButton = false;
+        [Tooltip("Play SFX menu click khi bấm")]
+        public bool playSFXOnClick = true;
         private Button btn;
     
         protected Vector3 m_localScale = Vector3.one;
@@ -68,6 +70,8 @@ namespace Luzart
                 transform.localScale = m_localScale;
             }
             corIEScale = StartCoroutine(IEScale());
+            if (playSFXOnClick && SoundManager.Instance != null)
+                SoundManager.Instance.PlayMenuClickSFX();
         }
     
         public void OnPointerUp(PointerEventData eventData)

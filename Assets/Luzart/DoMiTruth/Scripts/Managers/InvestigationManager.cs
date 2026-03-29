@@ -8,7 +8,20 @@ namespace Luzart
     {
         private RoomSO currentRoom;
 
+        private GameObject currentRoomInstance;
+
         public RoomSO CurrentRoom => currentRoom;
+
+        public void UnloadRoom()
+        {
+            if (currentRoomInstance != null)
+            {
+                Destroy(currentRoomInstance);
+                currentRoomInstance = null;
+            }
+            currentRoom = null;
+            UIManager.Instance.HideUiActive(UIName.Investigation);
+        }
 
         public void LoadRoom(RoomSO room)
         {

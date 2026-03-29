@@ -31,6 +31,7 @@ namespace Luzart
         {
             GameDataManager.Instance.Data.musicVolume = value;
             GameDataManager.Instance.Save();
+            SoundManager.Instance?.SetMusicVolume(value);
             onSettingsChanged?.Raise();
         }
 
@@ -38,6 +39,7 @@ namespace Luzart
         {
             GameDataManager.Instance.Data.sfxVolume = value;
             GameDataManager.Instance.Save();
+            SoundManager.Instance?.SetSFXVolume(value);
             onSettingsChanged?.Raise();
         }
     }

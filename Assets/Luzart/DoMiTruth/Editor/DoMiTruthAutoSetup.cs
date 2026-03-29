@@ -232,6 +232,23 @@ namespace Luzart.Editor
                 camGo.AddComponent<AudioListener>();
             }
 
+            // --- SoundManager ---
+            if (Object.FindFirstObjectByType<SoundManager>() == null)
+            {
+                var soundGo = new GameObject("SoundManager");
+                var sm = soundGo.AddComponent<SoundManager>();
+                var musicSrc = soundGo.AddComponent<AudioSource>();
+                musicSrc.playOnAwake = false;
+                musicSrc.loop = true;
+                var sfxSrc = soundGo.AddComponent<AudioSource>();
+                sfxSrc.playOnAwake = false;
+
+                var smSO = new SerializedObject(sm);
+                smSO.FindProperty("musicSource").objectReferenceValue = musicSrc;
+                smSO.FindProperty("sfxSource").objectReferenceValue = sfxSrc;
+                smSO.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             // --- EventSystem ---
             if (Object.FindFirstObjectByType<EventSystem>() == null)
             {
