@@ -16,6 +16,4 @@ MonoBehaviour:
   mapName: Dinning Room
   mapThumbnail: {fileID: 21300000, guid: 6e18854be7329496dbe7b87f7782fa6c, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
-  - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}
-  - {fileID: 11400000, guid: f614b2dc7213ec74a8ae824d38add439, type: 2}
+  - {fileID: 11400000, guid: 1647bf52d334d4b75a43419d7fdbccd6, type: 2}

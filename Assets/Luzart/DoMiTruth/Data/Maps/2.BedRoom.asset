@@ -16,6 +16,4 @@ MonoBehaviour:
   mapName: Bedroom
   mapThumbnail: {fileID: 21300000, guid: 2004ebc71f185427caa370f6cb128d55, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 47ee1b9cfc7f64b498b98cb03b8e8e66, type: 2}
-  - {fileID: 11400000, guid: 711ab35c805a3b144bd89168249516e2, type: 2}
-  - {fileID: 11400000, guid: b6435f3b41cf5094b9e993f2495378ea, type: 2}
+  - {fileID: 11400000, guid: 494f0df5444c14db8be390705860aa6e, type: 2}

@@ -16,6 +16,4 @@ MonoBehaviour:
   mapName: Hallway
   mapThumbnail: {fileID: 21300000, guid: 912f83083d4c44139b09c5ed854a2326, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
-  - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}
-  - {fileID: 11400000, guid: f614b2dc7213ec74a8ae824d38add439, type: 2}
+  - {fileID: 11400000, guid: 2ab5568bbc2be4a90a22dbe82eb4f563, type: 2}

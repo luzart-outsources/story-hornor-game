@@ -41,23 +41,16 @@ namespace Luzart
                 GameDataManager.Instance.MarkInteracted(data.objectId);
             }
 
-            switch (data.interactType)
-            {
-                case InteractType.Clue:
-                    HandleClue(data);
-                    break;
-                case InteractType.NPC:
-                    HandleNPC(data);
-                    break;
-                case InteractType.LockedItem:
-                    HandleLockedItem(data);
-                    break;
-                case InteractType.Decoration:
-                    break;
-            }
+            if (data is ClueInteractableSO clueData)
+                HandleClue(clueData);
+            else if (data is NPCInteractableSO npcData)
+                HandleNPC(npcData);
+            else if (data is LockedItemInteractableSO lockData)
+                HandleLockedItem(lockData);
+            // DecorationInteractableSO → không làm gì
         }
 
-        private void HandleClue(InteractableObjectSO data)
+        private void HandleClue(ClueInteractableSO data)
         {
             if (data.clue == null) return;
 
@@ -70,13 +63,41 @@ namespace Luzart
             }
         }
 
-        private void HandleNPC(InteractableObjectSO data)
+        private void HandleNPC(NPCInteractableSO data)
         {
-            if (data.dialogue == null) return;
-            DialogueManager.Instance.StartDialogue(data.dialogue);
+            var dialogueUI = UIManager.Instance.ShowUI<UINPCDialogue>(UIName.NPCDialogue);
+            if (dialogueUI == null) return;
+
+            // Branching dialogue (có dialogue tree)
+            if (data.dialogueTree != null)
+            {
+                dialogueUI.StartBranchingDialogue(
+                    data.dialogueTree,
+                    data.npcFullBodySprite,
+                    data.npcFullBodyAnimator,
+                    onComplete: null
+                );
+                return;
+            }
+
+            // Fallback: linear dialogue
+            if (data.fallbackDialogue != null)
+            {
+                var npcChar = data.fallbackDialogue.lines.Count > 0
+                    ? data.fallbackDialogue.lines[0].character
+                    : null;
+
+                dialogueUI.StartLinearDialogue(
+                    data.fallbackDialogue,
+                    data.npcFullBodySprite,
+                    data.npcFullBodyAnimator,
+                    npcChar,
+                    onComplete: null
+                );
+            }
         }
 
-        private void HandleLockedItem(InteractableObjectSO data)
+        private void HandleLockedItem(LockedItemInteractableSO data)
         {
             if (data.lockConfig == null) return;
 

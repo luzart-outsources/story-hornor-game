@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56d13fdb062117a4ab8569f6548c9c0a, type: 3}
   m_Name: Room_LivingRoom
   m_EditorClassIdentifier: 
-  roomId: Room_LivingRoom
-  roomName: Phong Khach
+  roomId: living_room
+  roomName: LIVING ROOM
   backgroundImage: {fileID: 21300000, guid: 13826f78070bb4e6cb26546f52c65137, type: 3}
-  backgroundSize: {x: 2560, y: 1440}
+  backgroundSize: {x: 1920, y: 1080}
   interactables:
-  - data: {fileID: 11400000, guid: d9c33fc1e4d078b41802c95cb816c405, type: 2}
-    positionOnBackground: {x: 200, y: 300}
-  - data: {fileID: 11400000, guid: 0f3c51a6509de9046a0c25134251f16b, type: 2}
-    positionOnBackground: {x: 500, y: 200}
-  - data: {fileID: 11400000, guid: 582658219dc9add4e87c8b7d1996c71e, type: 2}
+  - data: {fileID: 11400000, guid: 1cc217a1b78cc41fc87f0fc716f45999, type: 2}
+    positionOnBackground: {x: 200, y: 400}
+  - data: {fileID: 11400000, guid: d93193791a83645ac89c548c474cbfa4, type: 2}
     positionOnBackground: {x: 800, y: 350}
+  - data: {fileID: 11400000, guid: 2c0ee722f3b834a08a63240b185645bb, type: 2}
+    positionOnBackground: {x: 500, y: 300}
   entryDialogue: {fileID: 11400000, guid: c2f18295f3d61d64684f4acd62cc8c90, type: 2}

@@ -1735,9 +1735,8 @@ namespace Luzart.Editor
         {
             string path = $"{dir}/{fileName}.asset";
             if (Exists(path)) return;
-            var so = ScriptableObject.CreateInstance<InteractableObjectSO>();
+            var so = ScriptableObject.CreateInstance<ClueInteractableSO>();
             so.objectId = fileName;
-            so.interactType = InteractType.Clue;
             so.isOneTimeOnly = true;
             so.hitboxSize = new Vector2(80, 80);
             so.clue = LoadAsset<ClueSO>(DATA + "/Clues/" + clueAssetName + ".asset");
@@ -1748,11 +1747,10 @@ namespace Luzart.Editor
         {
             string path = $"{dir}/{fileName}.asset";
             if (Exists(path)) return;
-            var so = ScriptableObject.CreateInstance<InteractableObjectSO>();
+            var so = ScriptableObject.CreateInstance<NPCInteractableSO>();
             so.objectId = fileName;
-            so.interactType = InteractType.NPC;
             so.hitboxSize = new Vector2(100, 150);
-            so.dialogue = LoadAsset<DialogueSequenceSO>(DATA + "/Dialogues/" + dlgAssetName + ".asset");
+            so.fallbackDialogue = LoadAsset<DialogueSequenceSO>(DATA + "/Dialogues/" + dlgAssetName + ".asset");
             AssetDatabase.CreateAsset(so, path);
         }
 
@@ -1761,9 +1759,8 @@ namespace Luzart.Editor
         {
             string path = $"{dir}/{fileName}.asset";
             if (Exists(path)) return;
-            var so = ScriptableObject.CreateInstance<InteractableObjectSO>();
+            var so = ScriptableObject.CreateInstance<LockedItemInteractableSO>();
             so.objectId = fileName;
-            so.interactType = InteractType.LockedItem;
             so.hitboxSize = new Vector2(100, 100);
             so.lockConfig = LoadAsset<LockConfigSO>(DATA + "/Locks/" + lockName + ".asset");
 

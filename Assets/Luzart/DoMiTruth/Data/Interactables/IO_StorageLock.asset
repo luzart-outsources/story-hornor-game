@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba3f14556d26041aaa32a423bc02ad0c, type: 3}
+  m_Name: IO_StorageLock
+  m_EditorClassIdentifier: 
+  objectId: io_storage_lock
+  hitboxSize: {x: 150, y: 150}
+  isOneTimeOnly: 0
+  highlightSprite: {fileID: 0}
+  lockConfig: {fileID: 11400000, guid: 958a7a0f25b5f426bab6e6929df99dce, type: 2}
+  onUnlockSuccess:
+  - {fileID: 11400000, guid: cdb503010d1c6f944994696157e5729b, type: 2}
+  - {fileID: 11400000, guid: 6acf7041f7c914352b5742291677add5, type: 2}
+  - {fileID: 11400000, guid: 90fb02660f7a54a059ad5255052cc77e, type: 2}
+  onUnlockFail: []

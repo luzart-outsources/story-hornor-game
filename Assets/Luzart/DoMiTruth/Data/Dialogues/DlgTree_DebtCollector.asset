@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8a2b2adee5c2406fb0c50c44244ff03, type: 3}
+  m_Name: DlgTree_DebtCollector
+  m_EditorClassIdentifier: 
+  dialogueId: dlg_debt_collector
+  npcCharacter: {fileID: 11400000, guid: 3e5df2bb2a293491fad90bfc820ff942, type: 2}
+  playerCharacter: {fileID: 11400000, guid: 9b89d477ed6fc0d4f93157527a06fd71, type: 2}
+  greetingLines:
+  - character: {fileID: 11400000, guid: 3e5df2bb2a293491fad90bfc820ff942, type: 2}
+    text: What? The hell do you want? So how exactly is that chick planning to settle
+      her debt?!
+    typingSpeed: 30
+    waitForInput: 1
+  choices:
+  - choiceLabel: Relationship with the victim
+    npcMoodAnimator: {fileID: 9100000, guid: 8019ac8194e864224a545395232ce48d, type: 2}
+    npcMoodSprite: {fileID: 0}
+    responseLines:
+    - character: {fileID: 11400000, guid: 3e5df2bb2a293491fad90bfc820ff942, type: 2}
+      text: She borrowed money to gamble and dug herself into a massive debt. So
+        now I'm the one who's gotta go out and collect?
+      typingSpeed: 30
+      waitForInput: 1
+    - character: {fileID: 11400000, guid: 3e5df2bb2a293491fad90bfc820ff942, type: 2}
+      text: Been threatening her, scaring the hell outta her, and she still wouldn't
+        cough up the cash. Kept making promises left and right, and even a few days
+        ago she still didn't pay a damn thing.
+      typingSpeed: 30
+      waitForInput: 1
+    - character: {fileID: 11400000, guid: 3e5df2bb2a293491fad90bfc820ff942, type: 2}
+      text: That's a huge amount of money. If she's dead, who the hell's gonna pay
+        me back?!
+      typingSpeed: 30
+      waitForInput: 1
+    testimonyCue: {fileID: 0}
+    hideAfterChosen: 1
+  - choiceLabel: Information about the victim's personality
+    npcMoodAnimator: {fileID: 9100000, guid: c2b33e3c970c744d6ac84d20f90d8ca2, type: 2}
+    npcMoodSprite: {fileID: 0}
+    responseLines:
+    - character: {fileID: 11400000, guid: 3e5df2bb2a293491fad90bfc820ff942, type: 2}
+      text: "Huh!? She was obsessed with getting rich \u2014 had connections everywhere,
+        knew how to do business \u2014 but she was hooked on gambling bad. Burned
+        every damn cent at the tables."
+      typingSpeed: 30
+      waitForInput: 1
+    - character: {fileID: 11400000, guid: 3e5df2bb2a293491fad90bfc820ff942, type: 2}
+      text: Kept saying her so-called 'fortune numbers' were gonna hit big and she'd
+        pay everything back. Tch, Lucky numbers my a-.
+      typingSpeed: 30
+      waitForInput: 1
+    testimonyCue: {fileID: 0}
+    hideAfterChosen: 1
+  farewellLines: []

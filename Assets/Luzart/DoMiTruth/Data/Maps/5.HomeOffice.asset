@@ -16,6 +16,4 @@ MonoBehaviour:
   mapName: HomeOffice
   mapThumbnail: {fileID: 21300000, guid: 28c9cb59b034146258f023147e2926ac, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
-  - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}
-  - {fileID: 11400000, guid: f614b2dc7213ec74a8ae824d38add439, type: 2}
+  - {fileID: 11400000, guid: 84cb068c34dc4422fa191df0a76f8efb, type: 2}

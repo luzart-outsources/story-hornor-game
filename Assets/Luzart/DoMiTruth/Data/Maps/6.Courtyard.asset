@@ -16,6 +16,4 @@ MonoBehaviour:
   mapName: Courtyard
   mapThumbnail: {fileID: 21300000, guid: d4a88b939378043b3aad524d32a4c6d9, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
-  - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}
-  - {fileID: 11400000, guid: f614b2dc7213ec74a8ae824d38add439, type: 2}
+  - {fileID: 11400000, guid: 0f7c0f5c7cb9349f6b63061d3de4a6b1, type: 2}

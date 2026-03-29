@@ -16,6 +16,4 @@ MonoBehaviour:
   mapName: Storage
   mapThumbnail: {fileID: 21300000, guid: 47f4851ed6e1044bc8bac2b44dbbd51c, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
-  - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}
-  - {fileID: 11400000, guid: f614b2dc7213ec74a8ae824d38add439, type: 2}
+  - {fileID: 11400000, guid: d9993ef3d08f64975abf312b2c3bd3ca, type: 2}

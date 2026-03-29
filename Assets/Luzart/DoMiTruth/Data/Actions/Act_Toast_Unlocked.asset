@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c5b71770128f9540b288ae7082e1baf, type: 3}
   m_Name: Act_Toast_Unlocked
   m_EditorClassIdentifier: 
-  message: Mo khoa thanh cong!
+  message: Unlocked successfully

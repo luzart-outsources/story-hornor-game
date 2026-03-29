@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lockType: 0
   passcode: 2468
+  swipePattern: 
   hintText: 'Goi y: So chan lien tiep'
