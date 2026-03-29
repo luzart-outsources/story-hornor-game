@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectId: io_debt_collector
   hitboxSize: {x: 200, y: 400}
-  isOneTimeOnly: 0
+  isOneTimeOnly: 1
   highlightSprite: {fileID: 0}
   dialogueTree: {fileID: 11400000, guid: cdcfe72b47ebf4ef4acd8cdbceb456b9, type: 2}
   npcFullBodySprite: {fileID: 0}

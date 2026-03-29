@@ -17,3 +17,4 @@ MonoBehaviour:
   clueImage: {fileID: 21300000, guid: 8ed092cb3ce704836805e9b0bd5d924a, type: 3}
   description: A list of phone numbers and addresses.
   category: 1
+  foundLocation: 

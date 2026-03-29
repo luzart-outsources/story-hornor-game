@@ -1729,20 +1729,11 @@ MonoBehaviour:
   isCache: 0
   showAnimation: {fileID: 0}
   hideAnimation: {fileID: 0}
-  imgNotebookBg: {fileID: 6467763320604529962}
-  btnCluesTab: {fileID: 0}
-  btnCharactersTab: {fileID: 0}
-  tabSwitch: {fileID: 0}
-  clueTabToggle: {fileID: 0}
-  characterTabToggle: {fileID: 0}
-  imgLeftPage: {fileID: 7978255502637624378}
   txtDescription: {fileID: 587508486688450139}
-  imgRightPage: {fileID: 1629081089528801540}
-  imgPolaroidFrame: {fileID: 1714214414826394309}
-  imgPhoto: {fileID: 5818741628313945101}
-  imgNameTag: {fileID: 2452429100996845241}
-  txtName: {fileID: 6214104861879932207}
-  txtCategory: {fileID: 0}
+  imgClue1Photo: {fileID: 5818741628313945101}
+  txtClue1: {fileID: 7699609713570898437}
+  imgClue2Photo: {fileID: 820391805409416120}
+  txtClue2: {fileID: 6214104861879932207}
   btnPrevPage: {fileID: 408124608347010198}
   btnNextPage: {fileID: 8718900949311232507}
   txtPageNumber: {fileID: 5161217687825440397}

@@ -42,12 +42,26 @@ namespace Luzart.Editor
             CreateRoomPrefabs(interactables, log);
             var rooms = CreateRooms(log);
             AssignRoomsToMaps(rooms, log);
+            AssignNotebookData(clues, chars, log);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
             EditorUtility.DisplayDialog("✅ GDD Data Created!",
                 string.Join("\n", log), "OK");
+        }
+
+        [MenuItem("DoMiTruth/📒 Assign Notebook Data", false, 108)]
+        public static void AssignNotebookDataMenu()
+        {
+            var log = new List<string>();
+            var chars = CreateCharacters(log);
+            var clues = CreateClues(log);
+            AssignNotebookData(clues, chars, log);
+            AssignEventChannels(log);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorUtility.DisplayDialog("✅ Notebook Data Assigned!", string.Join("\n", log), "OK");
         }
 
         [MenuItem("DoMiTruth/🔊 Create All Sound", false, 104)]
@@ -782,6 +796,89 @@ namespace Luzart.Editor
             }
 
             log?.Add($"✅ Maps: {assigned}/9 maps assigned rooms");
+        }
+
+        // ================================================================
+        //  NOTEBOOK DATA (assign allClues + allCharacters to GameConfig)
+        // ================================================================
+
+        private static void AssignNotebookData(ClueRefs clues, CharRefs chars, List<string> log)
+        {
+            var config = AssetDatabase.LoadAssetAtPath<GameConfigSO>(
+                DATA_ROOT + "/Config/GameConfig.asset");
+            if (config == null)
+            {
+                log?.Add("⚠️ GameConfig not found, skipped notebook data");
+                return;
+            }
+
+            // All clues
+            config.allClues = new List<ClueSO>
+            {
+                clues.contract, clues.debitNote, clues.contactInfo,
+                clues.brokenCabinet, clues.godOfWealth,
+                clues.brokenPhoto, clues.bloodShawl, clues.sleepingPills,
+                clues.frenchMaterials, clues.storagePhotos
+            };
+            config.allClues.RemoveAll(c => c == null);
+
+            // All characters (trừ detective — detective không phải suspect)
+            config.allCharacters = new List<DialogueCharacterSO>
+            {
+                chars.police, chars.doctor, chars.debtCollector
+            };
+            config.allCharacters.RemoveAll(c => c == null);
+
+            EditorUtility.SetDirty(config);
+            log?.Add($"✅ Notebook: {config.allClues.Count} clues + {config.allCharacters.Count} characters assigned to GameConfig");
+        }
+
+        // ================================================================
+        //  NPC DIALOGUE PREFAB
+        // ================================================================
+        //  EVENT CHANNELS (auto-create + assign to managers in scene)
+        // ================================================================
+
+        private static void AssignEventChannels(List<string> log)
+        {
+            string evtDir = DATA_ROOT + "/Events/";
+
+            // Create or load StringEventChannel
+            var onClueCollected = LoadOrCreate<StringEventChannel>(
+                evtDir + "Evt_OnClueCollected.asset", "Evt_OnClueCollected");
+            EditorUtility.SetDirty(onClueCollected);
+
+            var onNotebookUpdated = LoadOrCreate<GameEventChannel>(
+                evtDir + "Evt_OnNotebookUpdated.asset", "Evt_OnNotebookUpdated");
+            EditorUtility.SetDirty(onNotebookUpdated);
+
+            // Find managers in scene and assign
+            int assigned = 0;
+
+            var gdm = Object.FindObjectOfType<GameDataManager>();
+            if (gdm != null)
+            {
+                var so = new SerializedObject(gdm);
+                so.FindProperty("onClueCollected").objectReferenceValue = onClueCollected;
+                so.FindProperty("onNotebookUpdated").objectReferenceValue = onNotebookUpdated;
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(gdm);
+                assigned++;
+            }
+
+            var nbm = Object.FindObjectOfType<NotebookManager>();
+            if (nbm != null)
+            {
+                var so = new SerializedObject(nbm);
+                so.FindProperty("onClueCollected").objectReferenceValue = onClueCollected;
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(nbm);
+                assigned++;
+            }
+
+            log?.Add($"✅ Event Channels: created 2 assets, assigned to {assigned} managers in scene");
+            if (assigned < 2)
+                log?.Add("⚠️ Mở scene có GameDataManager + NotebookManager rồi bấm lại nếu chưa assign hết");
         }
 
         // ================================================================

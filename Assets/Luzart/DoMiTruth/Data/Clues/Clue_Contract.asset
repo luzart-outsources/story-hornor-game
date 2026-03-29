@@ -18,3 +18,4 @@ MonoBehaviour:
   description: A contract for co-investing in a private clinic. The victim's signature
     is missing.
   category: 1
+  foundLocation: 

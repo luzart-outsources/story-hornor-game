@@ -5,11 +5,12 @@ namespace Luzart
 
     public class NotebookManager : Singleton<NotebookManager>
     {
-        [SerializeField] private ClueSO[] allClues;
-        [SerializeField] private DialogueCharacterSO[] allCharacters;
-
         [Header("SO Events")]
         [SerializeField] private StringEventChannel onClueCollected;
+
+        // Auto-lấy từ GameConfig, không cần kéo tay
+        private List<ClueSO> AllClues => GameFlowController.Instance?.GameConfig?.allClues;
+        private List<DialogueCharacterSO> AllCharacters => GameFlowController.Instance?.GameConfig?.allCharacters;
 
         private void OnEnable()
         {
@@ -25,7 +26,6 @@ namespace Luzart
 
         private void OnClueCollectedHandler(string clueId)
         {
-            // Auto-refresh notebook UI if open
             var notebookUI = UIManager.Instance.GetUiActive<UINotebook>(UIName.Notebook);
             if (notebookUI != null)
             {
@@ -36,14 +36,13 @@ namespace Luzart
         public List<ClueSO> GetCollectedClues()
         {
             var result = new List<ClueSO>();
-            if (allClues == null) return result;
+            var clues = AllClues;
+            if (clues == null) return result;
 
-            for (int i = 0; i < allClues.Length; i++)
+            for (int i = 0; i < clues.Count; i++)
             {
-                if (allClues[i] != null && GameDataManager.Instance.HasClue(allClues[i].clueId))
-                {
-                    result.Add(allClues[i]);
-                }
+                if (clues[i] != null && GameDataManager.Instance.HasClue(clues[i].clueId))
+                    result.Add(clues[i]);
             }
             return result;
         }
@@ -51,25 +50,25 @@ namespace Luzart
         public List<DialogueCharacterSO> GetMetCharacters()
         {
             var result = new List<DialogueCharacterSO>();
-            if (allCharacters == null) return result;
+            var chars = AllCharacters;
+            if (chars == null) return result;
 
-            for (int i = 0; i < allCharacters.Length; i++)
+            for (int i = 0; i < chars.Count; i++)
             {
-                if (allCharacters[i] != null && GameDataManager.Instance.HasMetCharacter(allCharacters[i].characterId))
-                {
-                    result.Add(allCharacters[i]);
-                }
+                if (chars[i] != null && GameDataManager.Instance.HasMetCharacter(chars[i].characterId))
+                    result.Add(chars[i]);
             }
             return result;
         }
 
         public int GetCollectedClueCount()
         {
-            if (allClues == null) return 0;
+            var clues = AllClues;
+            if (clues == null) return 0;
             int count = 0;
-            for (int i = 0; i < allClues.Length; i++)
+            for (int i = 0; i < clues.Count; i++)
             {
-                if (allClues[i] != null && GameDataManager.Instance.HasClue(allClues[i].clueId))
+                if (clues[i] != null && GameDataManager.Instance.HasClue(clues[i].clueId))
                     count++;
             }
             return count;
@@ -77,7 +76,7 @@ namespace Luzart
 
         public int GetTotalClueCount()
         {
-            return allClues != null ? allClues.Length : 0;
+            return AllClues != null ? AllClues.Count : 0;
         }
     }
 }

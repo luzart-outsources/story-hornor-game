@@ -13,12 +13,6 @@ MonoBehaviour:
   m_Name: IO_Butler
   m_EditorClassIdentifier: 
   objectId: IO_Butler
-  interactType: 1
   hitboxSize: {x: 100, y: 150}
-  isOneTimeOnly: 0
+  isOneTimeOnly: 1
   highlightSprite: {fileID: 0}
-  clue: {fileID: 0}
-  dialogue: {fileID: 11400000, guid: ccbb130d19dd7034ca1f47ff8b961148, type: 2}
-  lockConfig: {fileID: 0}
-  onUnlockSuccess: []
-  onUnlockFail: []

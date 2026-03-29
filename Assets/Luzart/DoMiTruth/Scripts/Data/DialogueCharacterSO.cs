@@ -14,5 +14,6 @@ namespace Luzart
         public RuntimeAnimatorController portraitAnimator;
 
         public Color nameColor = Color.white;
+        public string foundLocation;
     }
 }

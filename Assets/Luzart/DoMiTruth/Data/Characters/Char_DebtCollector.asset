@@ -17,3 +17,4 @@ MonoBehaviour:
   portrait: {fileID: 0}
   portraitAnimator: {fileID: 9100000, guid: 8019ac8194e864224a545395232ce48d, type: 2}
   nameColor: {r: 1, g: 1, b: 1, a: 1}
+  foundLocation: 

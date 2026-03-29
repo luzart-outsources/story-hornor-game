@@ -6,37 +6,24 @@ namespace Luzart
     using TMPro;
 
     /// <summary>
-    /// Notebook UI — sổ mở 2 trang.
-    /// Trang trái: text description clue.
-    /// Trang phải: polaroid ảnh clue + giấy rách tên clue.
-    /// Lật trang qua từng clue/character đã thu thập.
-    /// Tab: Clues / Characters.
+    /// Notebook UI — sổ mở 2 trang, không tab.
+    /// Mỗi spread hiển thị 2 items (clue hoặc character).
+    /// Trang trái: text description (gạch đầu dòng tên + mô tả từng item).
+    /// Trang phải: 2 ảnh polaroid (Clue1_Photo, Clue2_Photo) + nơi tìm thấy (txtClue1, txtClue2).
+    /// Cả clue và character nằm chung 1 list, lật trang qua.
     /// </summary>
     public class UINotebook : UIBase
     {
-        [Header("Background")]
-        [SerializeField] private Image imgNotebookBg;
-
-        [Header("Tab Buttons")]
-        [SerializeField] private Button btnCluesTab;
-        [SerializeField] private Button btnCharactersTab;
-
-        [Header("Tab Switching")]
-        [SerializeField] private SelectSwitchGameObject tabSwitch;
-        [SerializeField] private SelectToggleImage clueTabToggle;
-        [SerializeField] private SelectToggleImage characterTabToggle;
-
         [Header("Trang trái — Description")]
-        [SerializeField] private Image imgLeftPage;
         [SerializeField] private TMP_Text txtDescription;
 
-        [Header("Trang phải — Polaroid + Name Tag")]
-        [SerializeField] private Image imgRightPage;
-        [SerializeField] private Image imgPolaroidFrame;
-        [SerializeField] private Image imgPhoto;
-        [SerializeField] private Image imgNameTag;
-        [SerializeField] private TMP_Text txtName;
-        [SerializeField] private TMP_Text txtCategory;
+        [Header("Trang phải — Item 1")]
+        [SerializeField] private Image imgClue1Photo;
+        [SerializeField] private TMP_Text txtClue1;
+
+        [Header("Trang phải — Item 2")]
+        [SerializeField] private Image imgClue2Photo;
+        [SerializeField] private TMP_Text txtClue2;
 
         [Header("Navigation")]
         [SerializeField] private Button btnPrevPage;
@@ -44,17 +31,21 @@ namespace Luzart
         [SerializeField] private TMP_Text txtPageNumber;
         [SerializeField] private Button btnClose;
 
-        // State
-        private int currentTab; // 0 = Clues, 1 = Characters
-        private int currentPage;
-        private List<ClueSO> collectedClues = new List<ClueSO>();
-        private List<DialogueCharacterSO> metCharacters = new List<DialogueCharacterSO>();
+        // Data — unified list (clue + character xen kẽ hoặc nối tiếp)
+        private List<NotebookEntry> entries = new List<NotebookEntry>();
+        private int currentPage; // mỗi page hiển thị 2 entries
+
+        private struct NotebookEntry
+        {
+            public string name;
+            public string description;
+            public string foundLocation;
+            public Sprite photo;
+        }
 
         protected override void Setup()
         {
             base.Setup();
-            GameUtil.ButtonOnClick(btnCluesTab, () => SwitchTab(0));
-            GameUtil.ButtonOnClick(btnCharactersTab, () => SwitchTab(1));
             GameUtil.ButtonOnClick(btnPrevPage, PrevPage);
             GameUtil.ButtonOnClick(btnNextPage, NextPage);
 
@@ -65,123 +56,170 @@ namespace Luzart
         public override void Show(System.Action onHideDone)
         {
             base.Show(onHideDone);
-            SwitchTab(0);
+            BuildEntries();
+            currentPage = 0;
+            ShowCurrentPage();
         }
 
         public override void RefreshUI()
         {
-            SwitchTab(currentTab);
+            BuildEntries();
+            ShowCurrentPage();
         }
 
-        private void SwitchTab(int tabIndex)
+        // ========== BUILD UNIFIED LIST ==========
+
+        private void BuildEntries()
         {
-            currentTab = tabIndex;
-            currentPage = 0;
+            entries.Clear();
 
-            if (tabSwitch != null)
-                tabSwitch.Select(tabIndex);
-
-            if (clueTabToggle != null)
-                clueTabToggle.Select(tabIndex == 0);
-            if (characterTabToggle != null)
-                characterTabToggle.Select(tabIndex == 1);
-
-            if (tabIndex == 0)
+            // Clues trước
+            var clues = NotebookManager.Instance.GetCollectedClues();
+            for (int i = 0; i < clues.Count; i++)
             {
-                collectedClues = NotebookManager.Instance.GetCollectedClues();
-                ShowCurrentPage();
+                var c = clues[i];
+                entries.Add(new NotebookEntry
+                {
+                    name = c.clueName,
+                    description = c.description,
+                    foundLocation = c.foundLocation,
+                    photo = c.clueImage
+                });
             }
-            else
+
+            // Characters sau
+            var characters = NotebookManager.Instance.GetMetCharacters();
+            for (int i = 0; i < characters.Count; i++)
             {
-                metCharacters = NotebookManager.Instance.GetMetCharacters();
-                ShowCurrentPage();
+                var ch = characters[i];
+                entries.Add(new NotebookEntry
+                {
+                    name = ch.characterName,
+                    description = GetCharacterDialogueSummary(ch),
+                    foundLocation = ch.foundLocation,
+                    photo = ch.portrait
+                });
             }
+        }
+
+        private string GetCharacterDialogueSummary(DialogueCharacterSO ch)
+        {
+            // Tìm dialogue tree của character này để lấy các dòng đã nói
+            var collectedClues = NotebookManager.Instance.GetCollectedClues();
+
+            // Fallback: chỉ hiện tên
+            return ch.characterName;
         }
 
         // ========== DISPLAY ==========
 
         private void ShowCurrentPage()
         {
-            if (currentTab == 0)
-                ShowCluePage();
-            else
-                ShowCharacterPage();
-        }
+            int startIdx = currentPage * 2;
+            int totalPages = Mathf.CeilToInt(entries.Count / 2f);
 
-        private void ShowCluePage()
-        {
-            bool hasItems = collectedClues != null && collectedClues.Count > 0;
-
-            if (hasItems)
+            // Item 1
+            if (startIdx < entries.Count)
             {
-                var clue = collectedClues[currentPage];
-
-                // Trang trái
-                if (txtDescription != null)
-                    txtDescription.text = clue.description;
-
-                // Trang phải — polaroid
-                if (imgPhoto != null)
-                {
-                    imgPhoto.gameObject.SetActive(true);
-                    if (clue.clueImage != null)
-                        imgPhoto.sprite = clue.clueImage;
-                }
-                if (imgPolaroidFrame != null) imgPolaroidFrame.gameObject.SetActive(true);
-                if (imgNameTag != null) imgNameTag.gameObject.SetActive(true);
-
-                if (txtName != null) txtName.text = clue.clueName;
-                if (txtCategory != null) txtCategory.text = clue.category.ToString();
+                var e1 = entries[startIdx];
+                ShowItem1(e1);
             }
             else
             {
-                ShowEmpty("No evidence collected yet.");
+                ClearItem1();
             }
 
-            UpdateNavButtons(hasItems ? collectedClues.Count : 0);
-        }
-
-        private void ShowCharacterPage()
-        {
-            bool hasItems = metCharacters != null && metCharacters.Count > 0;
-
-            if (hasItems)
+            // Item 2
+            if (startIdx + 1 < entries.Count)
             {
-                var ch = metCharacters[currentPage];
-
-                // Trang trái
-                if (txtDescription != null)
-                    txtDescription.text = ch.characterName;
-
-                // Trang phải — polaroid
-                if (imgPhoto != null)
-                {
-                    imgPhoto.gameObject.SetActive(true);
-                    if (ch.portrait != null)
-                        imgPhoto.sprite = ch.portrait;
-                }
-                if (imgPolaroidFrame != null) imgPolaroidFrame.gameObject.SetActive(true);
-                if (imgNameTag != null) imgNameTag.gameObject.SetActive(true);
-
-                if (txtName != null) txtName.text = ch.characterName;
-                if (txtCategory != null) txtCategory.text = "SUSPECT";
+                var e2 = entries[startIdx + 1];
+                ShowItem2(e2);
             }
             else
             {
-                ShowEmpty("No suspects met yet.");
+                ClearItem2();
             }
 
-            UpdateNavButtons(hasItems ? metCharacters.Count : 0);
+            // Trang trái — description gạch đầu dòng
+            BuildDescription(startIdx);
+
+            // Nav buttons
+            if (btnPrevPage != null)
+                btnPrevPage.gameObject.SetActive(currentPage > 0);
+            if (btnNextPage != null)
+                btnNextPage.gameObject.SetActive(currentPage < totalPages - 1);
+            if (txtPageNumber != null)
+                txtPageNumber.text = totalPages > 0 ? $"{currentPage + 1}/{totalPages}" : "0/0";
         }
 
-        private void ShowEmpty(string message)
+        private void BuildDescription(int startIdx)
         {
-            if (txtDescription != null) txtDescription.text = message;
-            if (imgPhoto != null) imgPhoto.gameObject.SetActive(false);
-            if (imgPolaroidFrame != null) imgPolaroidFrame.gameObject.SetActive(false);
-            if (imgNameTag != null) imgNameTag.gameObject.SetActive(false);
-            if (txtName != null) txtName.text = "";
-            if (txtCategory != null) txtCategory.text = "";
+            if (txtDescription == null) return;
+
+            if (entries.Count == 0)
+            {
+                txtDescription.text = "No evidence collected yet.";
+                return;
+            }
+
+            var sb = new System.Text.StringBuilder();
+
+            if (startIdx < entries.Count)
+            {
+                var e1 = entries[startIdx];
+                sb.AppendLine($"• <b>{e1.name}</b>");
+                if (!string.IsNullOrEmpty(e1.description))
+                    sb.AppendLine($"  {e1.description}");
+                sb.AppendLine();
+            }
+
+            if (startIdx + 1 < entries.Count)
+            {
+                var e2 = entries[startIdx + 1];
+                sb.AppendLine($"• <b>{e2.name}</b>");
+                if (!string.IsNullOrEmpty(e2.description))
+                    sb.AppendLine($"  {e2.description}");
+            }
+
+            txtDescription.text = sb.ToString().TrimEnd();
+        }
+
+        // ========== ITEM DISPLAY ==========
+
+        private void ShowItem1(NotebookEntry entry)
+        {
+            if (imgClue1Photo != null)
+            {
+                imgClue1Photo.gameObject.SetActive(true);
+                if (entry.photo != null)
+                    imgClue1Photo.sprite = entry.photo;
+            }
+            if (txtClue1 != null)
+                txtClue1.text = !string.IsNullOrEmpty(entry.foundLocation) ? entry.foundLocation : "";
+        }
+
+        private void ShowItem2(NotebookEntry entry)
+        {
+            if (imgClue2Photo != null)
+            {
+                imgClue2Photo.gameObject.SetActive(true);
+                if (entry.photo != null)
+                    imgClue2Photo.sprite = entry.photo;
+            }
+            if (txtClue2 != null)
+                txtClue2.text = !string.IsNullOrEmpty(entry.foundLocation) ? entry.foundLocation : "";
+        }
+
+        private void ClearItem1()
+        {
+            if (imgClue1Photo != null) imgClue1Photo.gameObject.SetActive(false);
+            if (txtClue1 != null) txtClue1.text = "";
+        }
+
+        private void ClearItem2()
+        {
+            if (imgClue2Photo != null) imgClue2Photo.gameObject.SetActive(false);
+            if (txtClue2 != null) txtClue2.text = "";
         }
 
         // ========== NAVIGATION ==========
@@ -195,22 +233,10 @@ namespace Luzart
 
         private void NextPage()
         {
-            int max = currentTab == 0 ? collectedClues.Count : metCharacters.Count;
-            if (currentPage >= max - 1) return;
+            int totalPages = Mathf.CeilToInt(entries.Count / 2f);
+            if (currentPage >= totalPages - 1) return;
             currentPage++;
             ShowCurrentPage();
-        }
-
-        private void UpdateNavButtons(int totalItems)
-        {
-            if (btnPrevPage != null)
-                btnPrevPage.gameObject.SetActive(currentPage > 0);
-
-            if (btnNextPage != null)
-                btnNextPage.gameObject.SetActive(currentPage < totalItems - 1);
-
-            if (txtPageNumber != null)
-                txtPageNumber.text = totalItems > 0 ? $"{currentPage + 1}/{totalItems}" : "0/0";
         }
     }
 }

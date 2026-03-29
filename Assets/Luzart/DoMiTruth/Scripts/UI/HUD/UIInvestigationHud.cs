@@ -9,6 +9,7 @@ namespace Luzart
         [Header("Buttons")]
         [SerializeField] private Button btnSettings;
         [SerializeField] private Button btnNotebook;
+        [SerializeField] private Button btnMapSelected;
 
         [Header("Clue Counter")]
         [SerializeField] private TMP_Text txtClueCount;
@@ -24,6 +25,12 @@ namespace Luzart
             base.Setup();
             GameUtil.ButtonOnClick(btnSettings, OnClickSettings);
             GameUtil.ButtonOnClick(btnNotebook, OnClickNotebook);
+            GameUtil.ButtonOnClick(btnMapSelected, OnClickMap);
+        }
+
+        private void OnClickMap()
+        {
+            GameFlowController.Instance.ReturnToMapSelection();
         }
 
         public override void Show(System.Action onHideDone)

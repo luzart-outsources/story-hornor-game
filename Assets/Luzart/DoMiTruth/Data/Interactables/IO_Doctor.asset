@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectId: io_doctor
   hitboxSize: {x: 200, y: 400}
-  isOneTimeOnly: 0
+  isOneTimeOnly: 1
   highlightSprite: {fileID: 0}
   dialogueTree: {fileID: 11400000, guid: 33d92e8b1a5564a8da445c52976381e2, type: 2}
   npcFullBodySprite: {fileID: 0}

@@ -17,3 +17,4 @@ MonoBehaviour:
   clueImage: {fileID: 21300000, guid: 1004c103152e6436090cd630c8493b9e, type: 3}
   description: Textbooks and notes for learning French.
   category: 1
+  foundLocation: 

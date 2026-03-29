@@ -21,6 +21,10 @@ namespace Luzart
         [Header("Maps")]
         public List<MapSO> allMaps = new List<MapSO>();
 
+        [Header("Notebook Data")]
+        public List<ClueSO> allClues = new List<ClueSO>();
+        public List<DialogueCharacterSO> allCharacters = new List<DialogueCharacterSO>();
+
         [Header("Investigation")]
         public float panSpeed = 5f;
         public float panEdgeThreshold = 50f;

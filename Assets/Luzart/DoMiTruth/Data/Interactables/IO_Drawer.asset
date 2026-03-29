@@ -13,15 +13,6 @@ MonoBehaviour:
   m_Name: IO_Drawer
   m_EditorClassIdentifier: 
   objectId: IO_Drawer
-  interactType: 2
   hitboxSize: {x: 100, y: 100}
-  isOneTimeOnly: 0
+  isOneTimeOnly: 1
   highlightSprite: {fileID: 0}
-  clue: {fileID: 0}
-  dialogue: {fileID: 0}
-  lockConfig: {fileID: 11400000, guid: af1584e8ee15a4a4aada1d969ecb7bdc, type: 2}
-  onUnlockSuccess:
-  - {fileID: 11400000, guid: cdb503010d1c6f944994696157e5729b, type: 2}
-  - {fileID: 11400000, guid: 3c664957d5b37c94a8523a8811949a85, type: 2}
-  onUnlockFail:
-  - {fileID: 11400000, guid: 3f31f9dbacdb77e419049beec34bacd4, type: 2}

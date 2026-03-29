@@ -166,26 +166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b20b5b15e143d74f832bdad0cebc973, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  allClues:
-  - {fileID: 11400000, guid: 63186ffcb75d4bb48848b98fb63a56c7, type: 2}
-  - {fileID: 11400000, guid: b2c8ff1b0ec972e4fb7a2e01759286f9, type: 2}
-  - {fileID: 11400000, guid: 491cad1e74ba1f345a1ac39aa7c52403, type: 2}
-  - {fileID: 11400000, guid: 1df18ab4313c9044f83d680d3cb492cb, type: 2}
-  - {fileID: 11400000, guid: 06b8832efeeedb7489711be191768ca8, type: 2}
-  - {fileID: 11400000, guid: 76e5c1f6d8528d748ac2ac1f14cc1b7b, type: 2}
-  - {fileID: 11400000, guid: 0041e5440dce6ad4aa4eac925c0a306d, type: 2}
-  - {fileID: 11400000, guid: 642a1a2b3174dab42a2d518eb4921944, type: 2}
-  - {fileID: 11400000, guid: c1b192e74c969e6419efbde968d1b4da, type: 2}
-  - {fileID: 11400000, guid: c131cc27ab35a7244b6faf340e42340f, type: 2}
-  - {fileID: 11400000, guid: 9cc6d983e5d655742ab26e5462dbed6d, type: 2}
-  - {fileID: 11400000, guid: 3188403831e23a344ad4da0a350749fe, type: 2}
-  allCharacters:
-  - {fileID: 11400000, guid: c0a8775af16a95e40a6158d66d13cdab, type: 2}
-  - {fileID: 11400000, guid: 9b89d477ed6fc0d4f93157527a06fd71, type: 2}
-  - {fileID: 11400000, guid: 1a52856b3ea809c4985183ef32aa3d11, type: 2}
-  - {fileID: 11400000, guid: 44aca2fbae16e9a44961a10fa930477c, type: 2}
-  - {fileID: 11400000, guid: a33770aae572c7143bf9f60ae42b648e, type: 2}
-  onClueCollected: {fileID: 11400000, guid: 436d4742438e3744f932df684acbf177, type: 2}
+  onClueCollected: {fileID: 11400000, guid: 1c79d5095ed124e2394f265ad0ebec94, type: 2}
 --- !u!1 &770949907
 GameObject:
   m_ObjectHideFlags: 0
@@ -722,8 +703,8 @@ MonoBehaviour:
     currentFlowStep: 0
     musicVolume: 1
     sfxVolume: 1
-  onClueCollected: {fileID: 11400000, guid: 436d4742438e3744f932df684acbf177, type: 2}
-  onNotebookUpdated: {fileID: 11400000, guid: 4fadba5cec35e5d499dda78c44d3c2da, type: 2}
+  onClueCollected: {fileID: 11400000, guid: 1c79d5095ed124e2394f265ad0ebec94, type: 2}
+  onNotebookUpdated: {fileID: 11400000, guid: 7b641a71265ca43bea42b4ff55436c2e, type: 2}
 --- !u!1 &1224244841
 GameObject:
   m_ObjectHideFlags: 0

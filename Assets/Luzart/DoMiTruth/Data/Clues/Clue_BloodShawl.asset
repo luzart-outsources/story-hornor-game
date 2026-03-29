@@ -17,3 +17,4 @@ MonoBehaviour:
   clueImage: {fileID: 21300000, guid: 9c5f85707240e47ed897635b1bb4a908, type: 3}
   description: A silk shawl with visible bloodstains.
   category: 0
+  foundLocation: 

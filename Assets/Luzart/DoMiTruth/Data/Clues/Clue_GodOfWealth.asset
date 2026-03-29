@@ -17,3 +17,4 @@ MonoBehaviour:
   clueImage: {fileID: 21300000, guid: ea1327dcb4f5c450481c021af0961a0b, type: 3}
   description: A golden statue of the God of Wealth. Seems important to the victim.
   category: 0
+  foundLocation: 

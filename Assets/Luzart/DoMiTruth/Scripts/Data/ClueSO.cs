@@ -10,6 +10,7 @@ namespace Luzart
         public Sprite clueImage;
         [TextArea(3, 6)] public string description;
         public ClueCategory category;
+        public string foundLocation;
     }
 
     public enum ClueCategory

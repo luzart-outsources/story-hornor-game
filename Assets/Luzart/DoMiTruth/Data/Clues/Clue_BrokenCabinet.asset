@@ -17,3 +17,4 @@ MonoBehaviour:
   clueImage: {fileID: 21300000, guid: 9849f239137cf4720bfd531c84330b29, type: 3}
   description: A cabinet door that has been smashed open with force.
   category: 0
+  foundLocation: 

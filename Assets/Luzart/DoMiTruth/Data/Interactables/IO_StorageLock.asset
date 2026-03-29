@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectId: io_storage_lock
   hitboxSize: {x: 150, y: 150}
-  isOneTimeOnly: 0
+  isOneTimeOnly: 1
   highlightSprite: {fileID: 0}
   lockConfig: {fileID: 11400000, guid: 958a7a0f25b5f426bab6e6929df99dce, type: 2}
   onUnlockSuccess:
