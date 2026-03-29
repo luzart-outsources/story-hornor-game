@@ -42,15 +42,15 @@ namespace Luzart
             }
 
             if (data is ClueInteractableSO clueData)
-                HandleClue(clueData);
+                HandleClue(clueData, data.isOneTimeOnly ? obj : null);
             else if (data is NPCInteractableSO npcData)
-                HandleNPC(npcData);
+                HandleNPC(npcData, data.isOneTimeOnly ? obj : null);
             else if (data is LockedItemInteractableSO lockData)
-                HandleLockedItem(lockData);
+                HandleLockedItem(lockData, data.isOneTimeOnly ? obj : null);
             // DecorationInteractableSO → không làm gì
         }
 
-        private void HandleClue(ClueInteractableSO data)
+        private void HandleClue(ClueInteractableSO data, InteractableObject objToHide = null)
         {
             if (data.clue == null) return;
 
@@ -59,14 +59,16 @@ namespace Luzart
             var ui = UIManager.Instance.ShowUI<UIClueDetail>(UIName.ClueDetail);
             if (ui != null)
             {
-                ui.Init(data.clue);
+                ui.Init(data.clue, () => HideIfNeeded(objToHide));
             }
         }
 
-        private void HandleNPC(NPCInteractableSO data)
+        private void HandleNPC(NPCInteractableSO data, InteractableObject objToHide = null)
         {
             var dialogueUI = UIManager.Instance.ShowUI<UINPCDialogue>(UIName.NPCDialogue);
             if (dialogueUI == null) return;
+
+            System.Action onComplete = () => HideIfNeeded(objToHide);
 
             // Branching dialogue (có dialogue tree)
             if (data.dialogueTree != null)
@@ -75,7 +77,7 @@ namespace Luzart
                     data.dialogueTree,
                     data.npcFullBodySprite,
                     data.npcFullBodyAnimator,
-                    onComplete: null
+                    onComplete: onComplete
                 );
                 return;
             }
@@ -92,12 +94,12 @@ namespace Luzart
                     data.npcFullBodySprite,
                     data.npcFullBodyAnimator,
                     npcChar,
-                    onComplete: null
+                    onComplete: onComplete
                 );
             }
         }
 
-        private void HandleLockedItem(LockedItemInteractableSO data)
+        private void HandleLockedItem(LockedItemInteractableSO data, InteractableObject objToHide = null)
         {
             if (data.lockConfig == null) return;
 
@@ -115,6 +117,7 @@ namespace Luzart
                     onSuccess: () =>
                     {
                         GameDataManager.Instance.UnlockItem(data.objectId);
+                        HideIfNeeded(objToHide);
                         StartCoroutine(ExecuteActionChain(data.onUnlockSuccess));
                     },
                     onFail: () =>
@@ -123,6 +126,12 @@ namespace Luzart
                     }
                 );
             }
+        }
+
+        private void HideIfNeeded(InteractableObject obj)
+        {
+            if (obj != null)
+                obj.gameObject.SetActive(false);
         }
 
         public IEnumerator ExecuteActionChain(List<ActionStepConfig> configs)

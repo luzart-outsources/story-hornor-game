@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9aa2d7f372093a046a3c96800e32e9d9, type: 3}
+  m_Name: Act_ShowClue_FrenchMaterials
+  m_EditorClassIdentifier: 
+  clue: {fileID: 11400000, guid: 8b295544167a2456e802d40c4c98a280, type: 2}

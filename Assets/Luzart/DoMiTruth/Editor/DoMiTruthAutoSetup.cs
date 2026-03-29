@@ -1084,35 +1084,36 @@ namespace Luzart.Editor
             var comp = root.AddComponent<UIInvestigation>();
             comp.uiName = UIName.Investigation;
 
-            // Background container (larger than screen for panning)
-            var bgGo = new GameObject("Background", typeof(RectTransform), typeof(Image));
-            bgGo.transform.SetParent(root.transform, false);
-            var bgrt = bgGo.GetComponent<RectTransform>();
-            bgrt.anchorMin = new Vector2(0.5f, 0.5f);
-            bgrt.anchorMax = new Vector2(0.5f, 0.5f);
-            bgrt.pivot = new Vector2(0.5f, 0.5f);
-            bgrt.sizeDelta = new Vector2(2560, 1440);
-            bgrt.anchoredPosition = Vector2.zero;
-            bgGo.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f);
-
-            // Interactable container (child of background, moves with pan)
-            var interContainer = new GameObject("InteractableContainer", typeof(RectTransform));
-            interContainer.transform.SetParent(bgGo.transform, false);
-            StretchFill(interContainer.GetComponent<RectTransform>());
+            // Room container (room prefabs get instantiated here)
+            var roomContainer = new GameObject("RoomContainer", typeof(RectTransform));
+            roomContainer.transform.SetParent(root.transform, false);
+            StretchFill(roomContainer.GetComponent<RectTransform>());
 
             // Camera pan controller
             var panCtrl = root.AddComponent<CameraPanController>();
 
-            var interPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PREFABS + "/Components/InteractableObject.prefab");
+            // Pause button (top right)
+            var pauseBtn = new GameObject("BtnPause", typeof(RectTransform), typeof(Image), typeof(Button));
+            pauseBtn.transform.SetParent(root.transform, false);
+            var pbRect = pauseBtn.GetComponent<RectTransform>();
+            pbRect.anchorMin = pbRect.anchorMax = Vector2.one;
+            pbRect.pivot = Vector2.one;
+            pbRect.sizeDelta = new Vector2(55f, 55f);
+            pbRect.anchoredPosition = new Vector2(-15f, -15f);
+            pauseBtn.GetComponent<Image>().color = new Color(0.4f, 0.38f, 0.35f, 0.8f);
+            var pauseIcon = new GameObject("Icon", typeof(RectTransform), typeof(TextMeshProUGUI));
+            pauseIcon.transform.SetParent(pauseBtn.transform, false);
+            StretchFill(pauseIcon.GetComponent<RectTransform>());
+            var iconTMP = pauseIcon.GetComponent<TextMeshProUGUI>();
+            iconTMP.text = "⏸"; iconTMP.fontSize = 28f;
+            iconTMP.alignment = TextAlignmentOptions.Center;
+            iconTMP.color = Color.white; iconTMP.raycastTarget = false;
 
-            WireField(comp, "imgBackground", bgGo.GetComponent<Image>());
-            WireField(comp, "backgroundRect", bgrt);
-            WireField(comp, "interactableContainer", interContainer.transform);
+            WireField(comp, "roomContainer", roomContainer.transform);
             WireField(comp, "cameraPan", panCtrl);
-            if (interPrefab != null)
-                WireField(comp, "interactablePrefab", interPrefab.GetComponent<InteractableObject>());
+            WireField(comp, "btnPause", pauseBtn.GetComponent<Button>());
 
-            WireField(panCtrl, "backgroundRect", bgrt);
+            WireField(panCtrl, "backgroundRect", roomContainer.GetComponent<RectTransform>());
             WireField(panCtrl, "viewportRect", root.GetComponent<RectTransform>());
 
             SavePrefab(root, path);
@@ -1831,20 +1832,11 @@ namespace Luzart.Editor
             var so = ScriptableObject.CreateInstance<RoomSO>();
             so.roomId = fileName;
             so.roomName = roomName;
-            so.backgroundSize = new Vector2(2560, 1440);
 
             if (!string.IsNullOrEmpty(entryDlgName))
                 so.entryDialogue = LoadAsset<DialogueSequenceSO>(DATA + "/Dialogues/" + entryDlgName + ".asset");
 
-            foreach (var (ioName, x, y) in interactables)
-            {
-                var ioData = LoadAsset<InteractableObjectSO>(DATA + "/Interactables/" + ioName + ".asset");
-                if (ioData != null)
-                    so.interactables.Add(new RoomInteractable { data = ioData, positionOnBackground = new Vector2(x, y) });
-                else
-                    Debug.LogWarning($"[Room] Interactable not found: {ioName}");
-            }
-
+            // IO data giờ được kéo trực tiếp vào prefab, không cần gán ở đây
             AssetDatabase.CreateAsset(so, path);
             return so;
         }

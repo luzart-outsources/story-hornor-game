@@ -5,55 +5,55 @@ namespace Luzart
 
     public class UIInvestigation : UIBase
     {
-        [SerializeField] private Image imgBackground;
-        [SerializeField] private RectTransform backgroundRect;
-        [SerializeField] private Transform interactableContainer;
+        [SerializeField] private Transform roomContainer;
         [SerializeField] private CameraPanController cameraPan;
-        [SerializeField] private InteractableObject interactablePrefab;
+        [SerializeField] private Button btnPause;
+
+        private GameObject currentRoomInstance;
+
+        protected override void Setup()
+        {
+            base.Setup();
+
+            if (btnPause != null)
+                GameUtil.ButtonOnClick(btnPause, OnPause);
+        }
 
         public void LoadRoom(RoomSO room)
         {
             if (room == null) return;
 
-            ClearInteractables();
+            ClearRoom();
 
-            if (imgBackground != null && room.backgroundImage != null)
-                imgBackground.sprite = room.backgroundImage;
+            if (room.roomPrefab == null)
+            {
+                Debug.LogWarning($"[UIInvestigation] Room '{room.roomName}' has no roomPrefab assigned.");
+                return;
+            }
 
-            if (backgroundRect != null)
-                backgroundRect.sizeDelta = room.backgroundSize;
+            var parent = roomContainer != null ? roomContainer : transform;
+            currentRoomInstance = Instantiate(room.roomPrefab, parent);
 
             if (cameraPan != null)
-                cameraPan.Setup(room.backgroundSize);
-
-            SpawnInteractables(room);
-        }
-
-        private void SpawnInteractables(RoomSO room)
-        {
-            if (room.interactables == null || interactablePrefab == null) return;
-
-            var parent = interactableContainer != null ? interactableContainer : backgroundRect;
-
-            for (int i = 0; i < room.interactables.Count; i++)
             {
-                var ri = room.interactables[i];
-                if (ri.data == null) continue;
-
-                var obj = Instantiate(interactablePrefab, parent);
-                obj.Init(ri.data, ri.positionOnBackground);
+                var bgRect = currentRoomInstance.GetComponent<RectTransform>();
+                if (bgRect != null)
+                    cameraPan.Setup(bgRect);
             }
         }
 
-        private void ClearInteractables()
+        private void ClearRoom()
         {
-            var parent = interactableContainer != null ? interactableContainer : backgroundRect;
-            if (parent == null) return;
-
-            for (int i = parent.childCount - 1; i >= 0; i--)
+            if (currentRoomInstance != null)
             {
-                Destroy(parent.GetChild(i).gameObject);
+                Destroy(currentRoomInstance);
+                currentRoomInstance = null;
             }
+        }
+
+        private void OnPause()
+        {
+            UIManager.Instance.ShowUI(UIName.Pause);
         }
     }
 }

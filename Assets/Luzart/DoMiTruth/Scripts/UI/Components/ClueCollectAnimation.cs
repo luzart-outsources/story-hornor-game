@@ -21,7 +21,7 @@ namespace Luzart
 
             var rt = go.GetComponent<RectTransform>();
             rt.position = startWorldPos;
-            rt.sizeDelta = new Vector2(80f, 80f);
+            rt.sizeDelta = new Vector2(160f, 160f);
 
             var img = go.GetComponent<Image>();
             img.sprite = clueSprite;

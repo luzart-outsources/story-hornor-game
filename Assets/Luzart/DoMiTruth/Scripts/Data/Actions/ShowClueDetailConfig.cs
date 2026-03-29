@@ -27,12 +27,20 @@ namespace Luzart
         {
             if (clue == null) yield break;
 
+            // Collect clue data
+            GameDataManager.Instance.AddClue(clue.clueId);
+
+            // Show UI popup
+            bool closed = false;
             var ui = UIManager.Instance.ShowUI<UIClueDetail>(UIName.ClueDetail);
             if (ui != null)
             {
-                ui.Init(clue);
+                ui.Init(clue, onClose: () => closed = true);
             }
-            yield return null;
+
+            // Wait cho player đóng popup trước khi tiếp tục action chain
+            while (!closed)
+                yield return null;
         }
     }
 }

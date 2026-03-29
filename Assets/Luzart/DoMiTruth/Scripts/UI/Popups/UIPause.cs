@@ -35,7 +35,7 @@ namespace Luzart
         private void OnClickExitGame()
         {
             Hide();
-            GameFlowController.Instance.ReturnToMainMenu();
+            GameFlowController.Instance.ShowMapSelection();
         }
     }
 }

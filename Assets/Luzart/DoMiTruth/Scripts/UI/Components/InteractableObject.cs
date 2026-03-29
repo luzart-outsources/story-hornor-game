@@ -8,21 +8,19 @@ namespace Luzart
     public class InteractableObject : MonoBehaviour,
         IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
+        [Header("Kéo SO vào đây trong Prefab")]
+        [SerializeField] private InteractableObjectSO data;
+
         [SerializeField] private Image imgHighlight;
         [SerializeField] private RectTransform rectTransform;
 
-        private InteractableObjectSO data;
         private Tweener hoverTweener;
 
         public InteractableObjectSO Data => data;
 
-        public void Init(InteractableObjectSO objectData, Vector2 position)
+        private void Start()
         {
-            data = objectData;
-            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
-
-            rectTransform.anchoredPosition = position;
-            rectTransform.sizeDelta = data.hitboxSize;
+            if (data == null) return;
 
             if (imgHighlight != null)
             {
@@ -39,6 +37,7 @@ namespace Luzart
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (data == null) return;
             InvestigationManager.Instance.OnObjectClicked(this);
         }
 
@@ -47,6 +46,7 @@ namespace Luzart
             if (imgHighlight != null)
                 imgHighlight.enabled = true;
 
+            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
             hoverTweener?.Kill();
             hoverTweener = rectTransform.DOScale(1.05f, 0.2f).SetEase(Ease.OutQuad);
         }
@@ -56,6 +56,7 @@ namespace Luzart
             if (imgHighlight != null)
                 imgHighlight.enabled = false;
 
+            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
             hoverTweener?.Kill();
             hoverTweener = rectTransform.DOScale(1f, 0.2f).SetEase(Ease.OutQuad);
         }

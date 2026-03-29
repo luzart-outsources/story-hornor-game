@@ -9,8 +9,8 @@ namespace Luzart
 
     /// <summary>
     /// NPC Dialogue Screen — hỗ trợ cả branching (NPCDialogueTreeSO) và linear (DialogueSequenceSO).
-    /// Layout: NPC full body trái + board giữa-phải + choice buttons dưới + Detective portrait.
-    /// Tự quản lý dialogue flow (không dùng DialogueManager).
+    /// Layout: NPC full body trái + board giữa-phải (NPC nói) + dialogue box dưới (Detective nói) + choices.
+    /// Phân biệt speaker: NPC → board, Detective → dialogue box dưới.
     /// </summary>
     public class UINPCDialogue : UIBase
     {
@@ -25,14 +25,16 @@ namespace Luzart
         [Header("Board (text NPC nói)")]
         [SerializeField] private TMP_Text txtBoardText;
 
+        [Header("Detective Dialogue Box (dưới)")]
+        [SerializeField] private GameObject detectiveDialogueBox;
+        [SerializeField] private TMP_Text txtDetectiveText;
+        [SerializeField] private Image imgDetectivePortrait;
+        [SerializeField] private Animator animDetectivePortrait;
+
         [Header("Choice Buttons (dynamic pool)")]
         [SerializeField] private Transform choiceContainer;
         [SerializeField] private ChoiceButtonItem choiceButtonPrefab;
         public List<ChoiceButtonItem> choiceItems = new List<ChoiceButtonItem>();
-
-        [Header("Detective Portrait (góc dưới phải)")]
-        [SerializeField] private Image imgDetectivePortrait;
-        [SerializeField] private Animator animDetectivePortrait;
 
         [Header("Buttons")]
         [SerializeField] private Button btnNext;
@@ -46,15 +48,19 @@ namespace Luzart
         // State
         private NPCDialogueTreeSO currentTree;
         private DialogueSequenceSO currentLinearSequence;
+        private DialogueCharacterSO playerCharacter;
         private Action onDialogueComplete;
         private Tweener typingTweener;
 
         // Branching state
-        private enum DialoguePhase { Greeting, Choices, Response, Farewell }
+        private enum DialoguePhase { Greeting, Choices, DetectiveSpeaking, Response, Farewell }
         private DialoguePhase currentPhase;
         private int currentLineIndex;
         private List<DialogueLine> currentLines;
         private HashSet<int> chosenIndices = new HashSet<int>();
+
+        // Pending response sau khi Detective nói xong
+        private DialogueChoice pendingChoice;
 
         protected override void Setup()
         {
@@ -72,8 +78,10 @@ namespace Luzart
         {
             currentTree = tree;
             currentLinearSequence = null;
+            playerCharacter = tree.playerCharacter;
             onDialogueComplete = onComplete;
             chosenIndices.Clear();
+            pendingChoice = null;
 
             SetupNPCDisplay(tree.npcCharacter, fullBodySprite, fullBodyAnimator);
 
@@ -82,6 +90,8 @@ namespace Luzart
                     tree.playerCharacter.portraitAnimator, tree.playerCharacter.portrait);
 
             HideChoices();
+            HideDetectiveDialogue();
+            HighlightNPC();
             StartPhase(DialoguePhase.Greeting, tree.greetingLines);
         }
 
@@ -109,10 +119,10 @@ namespace Luzart
             }
 
             ShowNextButton(true);
-            ShowCurrentBranchingLine();
+            ShowCurrentLine();
         }
 
-        private void ShowCurrentBranchingLine()
+        private void ShowCurrentLine()
         {
             if (currentLines == null || currentLineIndex >= currentLines.Count)
             {
@@ -124,12 +134,44 @@ namespace Luzart
             HideChoices();
             ShowNextButton(true);
 
-            if (txtBoardText != null)
+            bool isDetective = IsDetectiveSpeaking(line);
+
+            if (isDetective)
             {
-                txtBoardText.text = "";
-                float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
-                typingTweener = txtBoardText.DOSetTextCharByChar(line.text, speed);
+                // Detective nói → dialogue box dưới
+                HighlightDetective();
+                ShowDetectiveDialogue();
+                ClearBoard();
+
+                if (txtDetectiveText != null)
+                {
+                    txtDetectiveText.text = "";
+                    float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
+                    typingTweener = txtDetectiveText.DOSetTextCharByChar(line.text, speed);
+                }
             }
+            else
+            {
+                // NPC nói → board
+                HighlightNPC();
+                HideDetectiveDialogue();
+
+                if (txtNPCLabel != null && line.character != null)
+                    txtNPCLabel.text = line.character.characterName.ToUpper();
+
+                if (txtBoardText != null)
+                {
+                    txtBoardText.text = "";
+                    float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
+                    typingTweener = txtBoardText.DOSetTextCharByChar(line.text, speed);
+                }
+            }
+        }
+
+        private bool IsDetectiveSpeaking(DialogueLine line)
+        {
+            if (line.character == null || playerCharacter == null) return false;
+            return line.character == playerCharacter;
         }
 
         private void OnPhaseComplete()
@@ -137,8 +179,38 @@ namespace Luzart
             switch (currentPhase)
             {
                 case DialoguePhase.Greeting:
-                case DialoguePhase.Response:
                     ShowChoices();
+                    break;
+
+                case DialoguePhase.Response:
+                    // Chọn 1 choice → respond xong → Farewell luôn
+                    StartPhase(DialoguePhase.Farewell, currentTree?.farewellLines);
+                    break;
+
+                case DialoguePhase.DetectiveSpeaking:
+                    // Detective nói xong → NPC respond
+                    HideDetectiveDialogue();
+                    if (pendingChoice != null)
+                    {
+                        // Đổi NPC mood
+                        if (pendingChoice.npcMoodAnimator != null || pendingChoice.npcMoodSprite != null)
+                        {
+                            SetupAnimatorOrSprite(imgNPCFullBody, animNPCFullBody,
+                                pendingChoice.npcMoodAnimator, pendingChoice.npcMoodSprite);
+                        }
+
+                        // Auto collect testimony
+                        if (pendingChoice.testimonyCue != null)
+                            GameDataManager.Instance.AddClue(pendingChoice.testimonyCue.clueId);
+
+                        var responseLines = pendingChoice.responseLines;
+                        pendingChoice = null;
+                        StartPhase(DialoguePhase.Response, responseLines);
+                    }
+                    else
+                    {
+                        ShowChoices();
+                    }
                     break;
 
                 case DialoguePhase.Farewell:
@@ -157,7 +229,6 @@ namespace Luzart
                 return;
             }
 
-            // Lọc available choices
             var available = new List<int>();
             for (int i = 0; i < currentTree.choices.Count; i++)
             {
@@ -173,11 +244,12 @@ namespace Luzart
 
             currentPhase = DialoguePhase.Choices;
             ShowNextButton(false);
+            HideDetectiveDialogue();
+            HighlightDetective(); // Detective đang chọn câu hỏi
 
             if (choiceContainer != null)
                 choiceContainer.gameObject.SetActive(true);
 
-            // Dùng MasterHelper.InitListObj để spawn/reuse buttons
             MasterHelper.InitListObj(available.Count, choiceButtonPrefab, choiceItems, choiceContainer, (item, btnIdx) =>
             {
                 item.gameObject.SetActive(true);
@@ -199,23 +271,21 @@ namespace Luzart
 
             var choice = currentTree.choices[choiceIndex];
             chosenIndices.Add(choiceIndex);
-
-            // Đổi NPC mood animation
-            if (choice.npcMoodAnimator != null || choice.npcMoodSprite != null)
-            {
-                SetupAnimatorOrSprite(imgNPCFullBody, animNPCFullBody,
-                    choice.npcMoodAnimator, choice.npcMoodSprite);
-            }
-
             HideChoices();
 
-            // Auto collect testimony
-            if (choice.testimonyCue != null)
-            {
-                GameDataManager.Instance.AddClue(choice.testimonyCue.clueId);
-            }
+            // Detective nói choiceLabel trước → rồi NPC respond
+            pendingChoice = choice;
 
-            StartPhase(DialoguePhase.Response, choice.responseLines);
+            // Tạo line cho Detective nói
+            var detectiveLine = new DialogueLine
+            {
+                character = playerCharacter,
+                text = choice.choiceLabel,
+                typingSpeed = 30f,
+                waitForInput = true
+            };
+
+            StartPhase(DialoguePhase.DetectiveSpeaking, new List<DialogueLine> { detectiveLine });
         }
 
         // ========== LINEAR DIALOGUE (fallback) ==========
@@ -225,16 +295,19 @@ namespace Luzart
         {
             currentTree = null;
             currentLinearSequence = sequence;
+            playerCharacter = null; // Linear không phân biệt
             onDialogueComplete = onComplete;
+            pendingChoice = null;
 
             SetupNPCDisplay(npc, fullBodySprite, fullBodyAnimator);
             HideChoices();
+            HideDetectiveDialogue();
 
             currentLines = sequence.lines;
             currentLineIndex = 0;
             currentPhase = DialoguePhase.Greeting;
             ShowNextButton(true);
-            ShowCurrentBranchingLine();
+            ShowCurrentLine();
         }
 
         // ========== LEGACY (dùng bởi DialogueManager cho linear đơn giản) ==========
@@ -259,6 +332,51 @@ namespace Luzart
             }
         }
 
+        // ========== HIGHLIGHT (ai đang nói) ==========
+
+        private void HighlightNPC()
+        {
+            if (canvasGroupNPC != null)
+                canvasGroupNPC.DOFade(highlightAlpha, highlightDuration);
+
+            // Dim detective portrait
+            if (imgDetectivePortrait != null)
+            {
+                var detColor = imgDetectivePortrait.color;
+                detColor.a = dimAlpha;
+                imgDetectivePortrait.DOFade(dimAlpha, highlightDuration);
+            }
+        }
+
+        private void HighlightDetective()
+        {
+            if (canvasGroupNPC != null)
+                canvasGroupNPC.DOFade(dimAlpha, highlightDuration);
+
+            if (imgDetectivePortrait != null)
+                imgDetectivePortrait.DOFade(highlightAlpha, highlightDuration);
+        }
+
+        // ========== DETECTIVE DIALOGUE BOX ==========
+
+        private void ShowDetectiveDialogue()
+        {
+            if (detectiveDialogueBox != null)
+                detectiveDialogueBox.SetActive(true);
+        }
+
+        private void HideDetectiveDialogue()
+        {
+            if (detectiveDialogueBox != null)
+                detectiveDialogueBox.SetActive(false);
+        }
+
+        private void ClearBoard()
+        {
+            if (txtBoardText != null)
+                txtBoardText.text = "";
+        }
+
         // ========== COMMON ==========
 
         private void OnClickNext()
@@ -278,7 +396,7 @@ namespace Luzart
             }
 
             currentLineIndex++;
-            ShowCurrentBranchingLine();
+            ShowCurrentLine();
         }
 
         private void ShowNextButton(bool show)
@@ -292,10 +410,13 @@ namespace Luzart
             currentTree = null;
             currentLinearSequence = null;
             currentLines = null;
+            playerCharacter = null;
             currentLineIndex = 0;
             typingTweener = null;
             chosenIndices.Clear();
+            pendingChoice = null;
 
+            HideDetectiveDialogue();
             Hide();
 
             var callback = onDialogueComplete;

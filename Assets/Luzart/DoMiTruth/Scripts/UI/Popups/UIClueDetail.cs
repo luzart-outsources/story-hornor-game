@@ -15,10 +15,12 @@ namespace Luzart
         [SerializeField] private Transform notebookTarget;
 
         private ClueSO currentClue;
+        private System.Action onCloseCallback;
 
-        public void Init(ClueSO clue)
+        public void Init(ClueSO clue, System.Action onClose = null)
         {
             currentClue = clue;
+            onCloseCallback = onClose;
 
             if (imgClue != null && clue.clueImage != null)
                 imgClue.sprite = clue.clueImage;
@@ -52,6 +54,9 @@ namespace Luzart
             {
                 base.OnClickClose();
             }
+
+            onCloseCallback?.Invoke();
+            onCloseCallback = null;
         }
     }
 }

@@ -13,13 +13,16 @@ namespace Luzart
         private Vector2 minBounds;
         private Vector2 maxBounds;
 
-        public void Setup(Vector2 backgroundSize)
+        public void Setup(RectTransform bgRect)
         {
+            backgroundRect = bgRect;
             if (backgroundRect == null) return;
 
-            backgroundRect.sizeDelta = backgroundSize;
             CalculateBounds();
             ClampPosition();
+
+            Debug.Log($"[CameraPan] bgRect.size={backgroundRect.rect.size}, bgSizeDelta={backgroundRect.sizeDelta}, " +
+                      $"viewport={viewportRect?.rect.size}, bounds=({minBounds}, {maxBounds})");
         }
 
         private void CalculateBounds()
@@ -27,7 +30,8 @@ namespace Luzart
             if (backgroundRect == null || viewportRect == null) return;
 
             var viewportSize = viewportRect.rect.size;
-            var bgSize = backgroundRect.sizeDelta;
+            // Dùng rect.size thay vì sizeDelta để lấy đúng size thật (kể cả khi dùng stretch anchors)
+            var bgSize = backgroundRect.rect.size;
 
             float halfDiffX = (bgSize.x - viewportSize.x) * 0.5f;
             float halfDiffY = (bgSize.y - viewportSize.y) * 0.5f;

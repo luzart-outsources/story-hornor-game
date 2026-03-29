@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   clueId: contract
   clueName: Private Clinic Investment Contract
-  clueImage: {fileID: 0}
+  clueImage: {fileID: 21300000, guid: 6f8fcaca11b2f4ea68ad6459704d49dd, type: 3}
   description: A contract for co-investing in a private clinic. The victim's signature
     is missing.
   category: 1

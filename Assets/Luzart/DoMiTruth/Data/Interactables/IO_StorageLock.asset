@@ -19,6 +19,6 @@ MonoBehaviour:
   lockConfig: {fileID: 11400000, guid: 958a7a0f25b5f426bab6e6929df99dce, type: 2}
   onUnlockSuccess:
   - {fileID: 11400000, guid: cdb503010d1c6f944994696157e5729b, type: 2}
-  - {fileID: 11400000, guid: 6acf7041f7c914352b5742291677add5, type: 2}
-  - {fileID: 11400000, guid: 90fb02660f7a54a059ad5255052cc77e, type: 2}
+  - {fileID: 11400000, guid: 67dfe00961624470cb041f12c0333c35, type: 2}
+  - {fileID: 11400000, guid: 4988c3b83af154e6b947def399c9fcaa, type: 2}
   onUnlockFail: []

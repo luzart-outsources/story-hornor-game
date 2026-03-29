@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   clueId: debit_note
   clueName: Debit note
-  clueImage: {fileID: 0}
+  clueImage: {fileID: 21300000, guid: 78c045b5e2cd64fa5ab56fea48391fa7, type: 3}
   description: A debit note showing a large outstanding debt.
   category: 1

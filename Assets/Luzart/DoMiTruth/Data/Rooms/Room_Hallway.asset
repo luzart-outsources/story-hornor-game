@@ -14,9 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roomId: hallway
   roomName: HALLWAY
-  backgroundImage: {fileID: 0}
-  backgroundSize: {x: 1920, y: 1080}
-  interactables:
-  - data: {fileID: 11400000, guid: ff30ea86994b54edc932458f02b3b2d1, type: 2}
-    positionOnBackground: {x: 500, y: 350}
+  roomPrefab: {fileID: 6140365477827801008, guid: 6d0bb2f1cf6484d91ad7fd19ab6166d5, type: 3}
   entryDialogue: {fileID: 0}

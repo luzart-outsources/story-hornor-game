@@ -14,10 +14,13 @@ namespace Luzart
         [SerializeField] private SelectSwitchGameObject panelSwitch;
 
         [Header("Passcode Panel")]
-        [SerializeField] private TMP_InputField inputPasscode;
+        [SerializeField] private TMP_Text txtPasscodeDisplay;
+        [SerializeField] private Button[] numpadButtons; // 0-9
+        [SerializeField] private Button btnDelete;
         [SerializeField] private Button btnConfirm;
         [SerializeField] private TMP_Text txtHint;
         [SerializeField] private TMP_Text txtError;
+        [SerializeField] private int maxDigits = 6;
 
         [Header("Swipe Pattern Panel")]
         [SerializeField] private SwipePatternDot[] patternDots;
@@ -30,6 +33,7 @@ namespace Luzart
         private Action onSuccess;
         private Action onFail;
 
+        private string currentPasscode = "";
         private readonly List<int> currentPattern = new List<int>();
         private bool isDrawingPattern;
 
@@ -40,7 +44,42 @@ namespace Luzart
             GameUtil.ButtonOnClick(btnPatternConfirm, OnClickPatternConfirm);
             GameUtil.ButtonOnClick(btnPatternReset, OnClickPatternReset);
 
+            if (btnDelete != null)
+                GameUtil.ButtonOnClick(btnDelete, OnClickDelete);
+
+            SetupNumpad();
             SetupPatternDots();
+        }
+
+        private void SetupNumpad()
+        {
+            if (numpadButtons == null) return;
+            for (int i = 0; i < numpadButtons.Length; i++)
+            {
+                if (numpadButtons[i] == null) continue;
+                int digit = i;
+                GameUtil.ButtonOnClick(numpadButtons[i], () => OnNumpadPress(digit));
+            }
+        }
+
+        private void OnNumpadPress(int digit)
+        {
+            if (currentPasscode.Length >= maxDigits) return;
+            currentPasscode += digit.ToString();
+            UpdatePasscodeDisplay();
+        }
+
+        private void OnClickDelete()
+        {
+            if (currentPasscode.Length == 0) return;
+            currentPasscode = currentPasscode.Substring(0, currentPasscode.Length - 1);
+            UpdatePasscodeDisplay();
+        }
+
+        private void UpdatePasscodeDisplay()
+        {
+            if (txtPasscodeDisplay != null)
+                txtPasscodeDisplay.text = currentPasscode;
         }
 
         private void SetupPatternDots()
@@ -71,8 +110,8 @@ namespace Luzart
             if (txtError != null)
                 txtError.gameObject.SetActive(false);
 
-            if (inputPasscode != null)
-                inputPasscode.text = string.Empty;
+            currentPasscode = "";
+            UpdatePasscodeDisplay();
 
             if (txtPatternHint != null)
                 txtPatternHint.text = config.hintText;
@@ -101,10 +140,7 @@ namespace Luzart
 
         private void ValidatePasscode()
         {
-            if (inputPasscode == null) return;
-
-            string input = inputPasscode.text.Trim();
-            if (string.Equals(input, lockConfig.passcode, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(currentPasscode, lockConfig.passcode, StringComparison.OrdinalIgnoreCase))
             {
                 Hide();
                 onSuccess?.Invoke();
@@ -123,8 +159,8 @@ namespace Luzart
 
             transform.DOShakePosition(0.3f, 10f, 20);
 
-            if (inputPasscode != null)
-                inputPasscode.text = string.Empty;
+            currentPasscode = "";
+            UpdatePasscodeDisplay();
         }
 
         #endregion

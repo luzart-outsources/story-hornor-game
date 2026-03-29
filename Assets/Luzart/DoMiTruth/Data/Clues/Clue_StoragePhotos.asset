@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   clueId: storage_photos
   clueName: Photos
-  clueImage: {fileID: 0}
+  clueImage: {fileID: 21300000, guid: 89b5b3d491392454083e819e0b53c7dc, type: 3}
   description: A collection of photographs found in the storage room.
   category: 3
