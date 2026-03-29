@@ -8,41 +8,38 @@ namespace Luzart
     using DG.Tweening;
 
     /// <summary>
-    /// Màn 3 - NPC Briefing: 2 NPC đứng 2 bên, ai nói thì highlight.
-    /// Hỗ trợ cả AnimatorController và Sprite tĩnh (fallback).
+    /// Màn 3 - NPC Briefing: 2 NPC nói chuyện.
+    /// - NPC Trái (full body bên trái) → text hiện trong Case Board.
+    /// - NPC Phải (portrait nhỏ dưới phải) → text hiện trong Dialogue Box.
     /// Tự quản lý dialogue flow (không dùng DialogueManager).
     /// </summary>
     public class UIBriefing : UIBase
     {
-        [Header("NPC Left")]
-        [SerializeField] private Image imgNPCLeft;
-        [SerializeField] private Animator animNPCLeft;
-        [SerializeField] private TMP_Text txtNPCLeftLabel;
-        [SerializeField] private CanvasGroup canvasGroupLeft;
+        [Header("NPC Left (Full Body)")]
+        [SerializeField] private Image imgNPCFullBody;
+        [SerializeField] private Animator animNPCFullBody;
+        [SerializeField] private CanvasGroup canvasGroupNPC;
 
-        [Header("NPC Right")]
-        [SerializeField] private Image imgNPCRight;
-        [SerializeField] private Animator animNPCRight;
-        [SerializeField] private TMP_Text txtNPCRightLabel;
-        [SerializeField] private CanvasGroup canvasGroupRight;
+        [Header("NPC Left Label")]
+        [SerializeField] private TMP_Text txtNPCLabel;
 
-        [Header("Case Board")]
+        [Header("Case Board (text NPC trái)")]
         [SerializeField] private TMP_Text txtCaseInfo;
 
-        [Header("Dialogue Box")]
+        [Header("Dialogue Box (text NPC phải)")]
         [SerializeField] private Image imgDialoguePortrait;
         [SerializeField] private Animator animDialoguePortrait;
         [SerializeField] private TMP_Text txtDialogueName;
         [SerializeField] private TMP_Text txtDialogueText;
-        [SerializeField] private Button btnNext;
+        [SerializeField] private GameObject dialogueBoxRoot;
 
-        [Header("Settings")]
+        [Header("Buttons")]
+        [SerializeField] private Button btnNext;
         [SerializeField] private Button btnSettings;
 
         [Header("Highlight")]
         [SerializeField] private float highlightAlpha = 1f;
         [SerializeField] private float dimAlpha = 0.4f;
-        [SerializeField] private float highlightScale = 1.02f;
         [SerializeField] private float highlightDuration = 0.3f;
 
         private DialogueSequenceSO currentSequence;
@@ -52,6 +49,7 @@ namespace Luzart
 
         private DialogueCharacterSO leftCharacter;
         private DialogueCharacterSO rightCharacter;
+        private Dictionary<string, BriefingCharacterSO> briefingCharMap;
 
         protected override void Setup()
         {
@@ -62,77 +60,72 @@ namespace Luzart
                 GameUtil.ButtonOnClick(btnSettings, OnClickSettings);
         }
 
-        /// <summary>
-        /// Khởi tạo briefing với dialogue và callback khi xong.
-        /// Auto-detect 2 characters từ dialogue lines.
-        /// </summary>
-        public void StartBriefing(DialogueSequenceSO sequence, Action onComplete)
+        public void StartBriefing(DialogueSequenceSO sequence, List<BriefingCharacterSO> briefingCharacters, Action onComplete)
         {
             currentSequence = sequence;
             currentLineIndex = 0;
             onBriefingComplete = onComplete;
 
-            if (txtCaseInfo != null)
-                txtCaseInfo.text = "";
+            // Build lookup map: characterId -> BriefingCharacterSO
+            briefingCharMap = new Dictionary<string, BriefingCharacterSO>();
+            if (briefingCharacters != null)
+            {
+                for (int i = 0; i < briefingCharacters.Count; i++)
+                {
+                    var bc = briefingCharacters[i];
+                    if (bc != null && bc.character != null)
+                        briefingCharMap[bc.character.characterId] = bc;
+                }
+            }
 
-            SetupCharactersFromDialogue(sequence);
+            DetectCharacters(sequence);
+            SetupNPCLeft();
             ShowCurrentLine();
         }
 
-        private void SetupCharactersFromDialogue(DialogueSequenceSO sequence)
+        private void DetectCharacters(DialogueSequenceSO sequence)
         {
             leftCharacter = null;
             rightCharacter = null;
 
             if (sequence == null || sequence.lines == null) return;
 
-            // Scan lines to find 2 unique characters
             for (int i = 0; i < sequence.lines.Count; i++)
             {
-                var character = sequence.lines[i].character;
-                if (character == null) continue;
+                var c = sequence.lines[i].character;
+                if (c == null) continue;
 
                 if (leftCharacter == null)
                 {
-                    leftCharacter = character;
+                    leftCharacter = c;
                 }
-                else if (rightCharacter == null && character.characterId != leftCharacter.characterId)
+                else if (rightCharacter == null && c.characterId != leftCharacter.characterId)
                 {
-                    rightCharacter = character;
+                    rightCharacter = c;
                     break;
                 }
             }
-
-            // Setup left NPC
-            SetupNPCSlot(imgNPCLeft, animNPCLeft, txtNPCLeftLabel, canvasGroupLeft, leftCharacter);
-
-            // Setup right NPC
-            SetupNPCSlot(imgNPCRight, animNPCRight, txtNPCRightLabel, canvasGroupRight, rightCharacter);
         }
 
-        private void SetupNPCSlot(Image img, Animator anim, TMP_Text label, CanvasGroup canvasGroup, DialogueCharacterSO character)
+        private void SetupNPCLeft()
         {
-            if (character == null)
-            {
-                if (img != null) img.gameObject.SetActive(false);
-                if (label != null) label.gameObject.SetActive(false);
-                return;
-            }
+            if (leftCharacter == null) return;
 
-            if (img != null)
-            {
-                img.gameObject.SetActive(true);
-                SetupAnimatorOrSprite(img, anim, character.fullBodyAnimator, character.fullBodySprite ?? character.portrait);
-            }
+            // Label
+            if (txtNPCLabel != null)
+                txtNPCLabel.text = leftCharacter.characterName.ToUpper();
 
-            if (label != null)
-            {
-                label.gameObject.SetActive(true);
-                label.text = character.characterName;
-            }
+            // Full body: từ BriefingCharacterSO
+            BriefingCharacterSO bc = null;
+            briefingCharMap?.TryGetValue(leftCharacter.characterId, out bc);
 
-            if (canvasGroup != null)
-                canvasGroup.alpha = dimAlpha;
+            if (imgNPCFullBody != null)
+            {
+                if (bc != null)
+                    SetupAnimatorOrSprite(imgNPCFullBody, animNPCFullBody, bc.fullBodyAnimator, bc.fullBodySprite);
+                else
+                    SetupAnimatorOrSprite(imgNPCFullBody, animNPCFullBody, null, leftCharacter.portrait);
+            }
         }
 
         private void ShowCurrentLine()
@@ -144,39 +137,78 @@ namespace Luzart
             }
 
             var line = currentSequence.lines[currentLineIndex];
-
-            // Update character display in dialogue box
-            if (line.character != null)
+            if (line.character == null)
             {
-                // Portrait: animator hoặc sprite
-                if (imgDialoguePortrait != null)
-                    SetupAnimatorOrSprite(imgDialoguePortrait, animDialoguePortrait, line.character.portraitAnimator, line.character.portrait);
-
-                if (txtDialogueName != null)
-                {
-                    txtDialogueName.text = line.character.characterName;
-                    txtDialogueName.color = line.character.nameColor;
-                }
-
-                // Highlight NPC đang nói
-                HighlightSpeaker(line.character);
-
-                // Mark character met
-                GameDataManager.Instance.MarkCharacterMet(line.character.characterId);
+                currentLineIndex++;
+                ShowCurrentLine();
+                return;
             }
 
-            // Animate text
+            bool isLeft = leftCharacter != null && line.character.characterId == leftCharacter.characterId;
+
+            if (isLeft)
+                ShowLeftLine(line);
+            else
+                ShowRightLine(line);
+
+            // Highlight
+            HighlightNPC(isLeft);
+
+            GameDataManager.Instance.MarkCharacterMet(line.character.characterId);
+        }
+
+        /// <summary>NPC trái nói → text trong case board.</summary>
+        private void ShowLeftLine(DialogueLine line)
+        {
+            // Ẩn dialogue box
+            if (dialogueBoxRoot != null)
+                dialogueBoxRoot.SetActive(false);
+
+            // Text trong case board
+            if (txtCaseInfo != null)
+            {
+                txtCaseInfo.text = "";
+                float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
+                typingTweener = txtCaseInfo.DOSetTextCharByChar(line.text, speed);
+            }
+        }
+
+        /// <summary>NPC phải nói → text trong dialogue box.</summary>
+        private void ShowRightLine(DialogueLine line)
+        {
+            // Hiện dialogue box
+            if (dialogueBoxRoot != null)
+                dialogueBoxRoot.SetActive(true);
+
+            // Portrait
+            if (imgDialoguePortrait != null)
+                SetupAnimatorOrSprite(imgDialoguePortrait, animDialoguePortrait, line.character.portraitAnimator, line.character.portrait);
+
+            // Name
+            if (txtDialogueName != null)
+            {
+                txtDialogueName.text = line.character.characterName;
+                txtDialogueName.color = line.character.nameColor;
+            }
+
+            // Text
             if (txtDialogueText != null)
             {
+                txtDialogueText.text = "";
                 float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
                 typingTweener = txtDialogueText.DOSetTextCharByChar(line.text, speed);
             }
         }
 
-        /// <summary>
-        /// Nếu có AnimatorController → enable Animator + set controller.
-        /// Nếu không → disable Animator + set Sprite tĩnh.
-        /// </summary>
+        private void HighlightNPC(bool leftSpeaking)
+        {
+            if (canvasGroupNPC != null)
+            {
+                canvasGroupNPC.DOKill();
+                canvasGroupNPC.DOFade(leftSpeaking ? highlightAlpha : dimAlpha, highlightDuration);
+            }
+        }
+
         private void SetupAnimatorOrSprite(Image img, Animator anim, RuntimeAnimatorController controller, Sprite fallbackSprite)
         {
             if (anim != null)
@@ -200,31 +232,6 @@ namespace Luzart
             }
         }
 
-        private void HighlightSpeaker(DialogueCharacterSO speaker)
-        {
-            bool isLeft = leftCharacter != null && speaker.characterId == leftCharacter.characterId;
-            bool isRight = rightCharacter != null && speaker.characterId == rightCharacter.characterId;
-
-            SetSlotHighlight(canvasGroupLeft, imgNPCLeft, isLeft);
-            SetSlotHighlight(canvasGroupRight, imgNPCRight, isRight);
-        }
-
-        private void SetSlotHighlight(CanvasGroup canvasGroup, Image img, bool isActive)
-        {
-            if (canvasGroup != null)
-            {
-                canvasGroup.DOKill();
-                canvasGroup.DOFade(isActive ? highlightAlpha : dimAlpha, highlightDuration);
-            }
-
-            if (img != null)
-            {
-                img.rectTransform.DOKill();
-                float targetScale = isActive ? highlightScale : 1f;
-                img.rectTransform.DOScale(targetScale, highlightDuration).SetEase(Ease.OutQuad);
-            }
-        }
-
         private void OnClickNext()
         {
             if (typingTweener != null && typingTweener.IsActive() && typingTweener.IsPlaying())
@@ -245,6 +252,7 @@ namespace Luzart
             typingTweener = null;
             leftCharacter = null;
             rightCharacter = null;
+            briefingCharMap = null;
 
             Hide();
 

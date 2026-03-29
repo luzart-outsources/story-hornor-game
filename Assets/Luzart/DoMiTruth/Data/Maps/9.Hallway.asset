@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 552a1848705446648bc0d1c00f06027e, type: 3}
-  m_Name: Map_Garden
+  m_Name: 9.Hallway
   m_EditorClassIdentifier: 
-  mapId: Map_Garden
-  mapName: Khu Vuon
-  mapThumbnail: {fileID: 0}
+  mapId: Hallway
+  mapName: Hallway
+  mapThumbnail: {fileID: 21300000, guid: 912f83083d4c44139b09c5ed854a2326, type: 3}
   rooms:
   - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
   - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}

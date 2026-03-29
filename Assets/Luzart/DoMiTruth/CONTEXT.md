@@ -29,6 +29,7 @@ Assets/
         Config/        -> GameConfig.asset, UIRegistry.asset
         Dialogues/     -> 4 dialogues: Dlg_Butler, Dlg_Intro, Dlg_Neighbor, Dlg_Wife
         Interactables/ -> 14+ interactive objects (IO_*)
+        BriefingChars/ -> BriefingCharacterSO per NPC (full body config)
         Locks/         -> 3 locks: Lock_Cabinet, Lock_Drawer, Lock_Safe
         Maps/          -> 3 maps: Map_Floor1, Map_Floor2, Map_Garden
         Rooms/         -> 9 rooms: Bathroom, FishPond, FrontYard, GuestRoom, Kitchen, LivingRoom, MasterBedroom, Shed, Study
@@ -90,10 +91,10 @@ GameFlowController
   |      OnCutsceneComplete -> ShowBriefing
   |
   +--> Man 3: ShowBriefing() --> UIBriefing (FULL SCREEN)
-  |      2 NPC full body 2 ben (auto-detect tu dialogue lines)
-  |      Ai noi thi highlight (alpha 1, scale 1.02), nguoi con lai dim (alpha 0.4)
-  |      Case board o giua
-  |      Dialogue box o duoi voi portrait + text
+  |      NPC Trai: full body ben trai (BriefingCharacterSO) -> noi trong Case Board
+  |      NPC Phai: portrait nho duoi phai (DialogueCharacterSO) -> noi trong Dialogue Box
+  |      Auto-detect 2 characters tu dialogue lines
+  |      Highlight NPC dang noi (CanvasGroup alpha)
   |      Ket thuc -> OnBriefingComplete -> ShowMapSelection
   |      Fallback: neu chua co prefab -> dung DialogueManager
   |
@@ -120,7 +121,8 @@ GameFlowController
 - introCutscene: VideoClip
 - cutsceneDuration: float (30s)
 - skipButtonDelay: float (3s)
-- briefingDialogue: DialogueSequenceSO  -> Dlg_Intro cho man Cong an
+- briefingDialogue: DialogueSequenceSO       -> Dlg_Intro cho man Cong an
+- briefingCharacters: List<BriefingCharacterSO> -> Full body NPC configs cho Briefing
 - allMaps: List<MapSO>
 - panSpeed: float (5)
 - panEdgeThreshold: float (50px)
@@ -191,11 +193,16 @@ GameFlowController
 ```
 - characterId: string
 - characterName: string
-- portrait: Sprite                           (fallback khi khong co animator)
-- fullBodySprite: Sprite                     (fallback khi khong co animator)
-- portraitAnimator: RuntimeAnimatorController (optional - animator cho portrait nho)
-- fullBodyAnimator: RuntimeAnimatorController (optional - animator cho full body)
+- portrait: Sprite                           (fallback khi khong co portraitAnimator)
+- portraitAnimator: RuntimeAnimatorController (optional - animator cho portrait nho trong dialogue box)
 - nameColor: Color
+```
+
+### BriefingCharacterSO (chi dung cho man Briefing)
+```
+- character: DialogueCharacterSO             (link de map characterId)
+- fullBodySprite: Sprite                     (fallback khi khong co fullBodyAnimator)
+- fullBodyAnimator: RuntimeAnimatorController (optional - animator cho full body NPC)
 ```
 Logic: Neu co AnimatorController -> dung Animator. Neu null -> dung Sprite tinh.
 
@@ -279,7 +286,7 @@ InvestigationHud=30
 |--------|-------|
 | UIMainMenu | 5 buttons (Play, Continue, Settings, Guide, Exit) + ButtonHoverSelect group |
 | UICutscene | VideoPlayer + skip button |
-| UIBriefing | Full screen: 2 NPC full body 2 ben (highlight ai dang noi) + case board + dialogue box. Auto-detect characters tu dialogue lines |
+| UIBriefing | Full screen: NPC trai full body + case board (text NPC trai) + dialogue box duoi phai (text NPC phai + portrait). Auto-detect 2 chars |
 | UIMapSelection | Grid MapSelectionItem, click -> OnMapSelected |
 | UIInvestigation | Room background + spawn InteractableObjects + CameraPanController |
 | UINPCDialogue | Portrait + name + text (typing anim) + next button |

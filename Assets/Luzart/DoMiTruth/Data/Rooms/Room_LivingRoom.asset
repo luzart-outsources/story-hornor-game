@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   roomId: Room_LivingRoom
   roomName: Phong Khach
-  backgroundImage: {fileID: 0}
+  backgroundImage: {fileID: 21300000, guid: 13826f78070bb4e6cb26546f52c65137, type: 3}
   backgroundSize: {x: 2560, y: 1440}
   interactables:
   - data: {fileID: 11400000, guid: d9c33fc1e4d078b41802c95cb816c405, type: 2}

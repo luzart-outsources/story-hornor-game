@@ -15,6 +15,8 @@ namespace Luzart
         [Header("Briefing")]
         [Tooltip("Dialogue khi Công an giao nhiệm vụ sau Cutscene. Nếu null sẽ bỏ qua.")]
         public DialogueSequenceSO briefingDialogue;
+        [Tooltip("Danh sách NPC full body hiển thị trong màn Briefing.")]
+        public List<BriefingCharacterSO> briefingCharacters = new List<BriefingCharacterSO>();
 
         [Header("Maps")]
         public List<MapSO> allMaps = new List<MapSO>();

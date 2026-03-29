@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 552a1848705446648bc0d1c00f06027e, type: 3}
-  m_Name: Map_Floor2
+  m_Name: 6.Courtyard
   m_EditorClassIdentifier: 
-  mapId: Map_Floor2
-  mapName: Tang 2 - Biet Thu
-  mapThumbnail: {fileID: 0}
+  mapId: Courtyard
+  mapName: Courtyard
+  mapThumbnail: {fileID: 21300000, guid: d4a88b939378043b3aad524d32a4c6d9, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 47ee1b9cfc7f64b498b98cb03b8e8e66, type: 2}
-  - {fileID: 11400000, guid: 711ab35c805a3b144bd89168249516e2, type: 2}
-  - {fileID: 11400000, guid: b6435f3b41cf5094b9e993f2495378ea, type: 2}
+  - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
+  - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}
+  - {fileID: 11400000, guid: f614b2dc7213ec74a8ae824d38add439, type: 2}

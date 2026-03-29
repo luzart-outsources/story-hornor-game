@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f80def3b6dfd047d08e9d17096ae8e0f, type: 3}
+  m_Name: Police
+  m_EditorClassIdentifier: 
+  character: {fileID: 11400000, guid: 44aca2fbae16e9a44961a10fa930477c, type: 2}
+  fullBodySprite: {fileID: 21300000, guid: 10be536cf75ad48c2ab058cd1cc29737, type: 3}
+  fullBodyAnimator: {fileID: 9100000, guid: 64cf48d2b6ffd4828a5b56ee80df7424, type: 2}

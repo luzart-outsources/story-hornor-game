@@ -15,7 +15,5 @@ MonoBehaviour:
   characterId: Char_Police
   characterName: POLICE
   portrait: {fileID: 21300000, guid: 31767da589e044165812330356edca9a, type: 3}
-  fullBodySprite: {fileID: 21300000, guid: 31767da589e044165812330356edca9a, type: 3}
-  portraitAnimator: {fileID: 0}
-  fullBodyAnimator: {fileID: 0}
+  portraitAnimator: {fileID: 9100000, guid: 64cf48d2b6ffd4828a5b56ee80df7424, type: 2}
   nameColor: {r: 0.5, g: 0.5, b: 1, a: 1}

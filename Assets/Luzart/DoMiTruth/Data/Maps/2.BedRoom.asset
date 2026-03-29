@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 552a1848705446648bc0d1c00f06027e, type: 3}
+  m_Name: 2.BedRoom
+  m_EditorClassIdentifier: 
+  mapId: Bedroom
+  mapName: Bedroom
+  mapThumbnail: {fileID: 21300000, guid: 2004ebc71f185427caa370f6cb128d55, type: 3}
+  rooms:
+  - {fileID: 11400000, guid: 47ee1b9cfc7f64b498b98cb03b8e8e66, type: 2}
+  - {fileID: 11400000, guid: 711ab35c805a3b144bd89168249516e2, type: 2}
+  - {fileID: 11400000, guid: b6435f3b41cf5094b9e993f2495378ea, type: 2}

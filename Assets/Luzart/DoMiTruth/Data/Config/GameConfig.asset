@@ -14,12 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   introCutscene: {fileID: 0}
   cutsceneDuration: 30
-  skipButtonDelay: 3
+  skipButtonDelay: 0
   briefingDialogue: {fileID: 11400000, guid: c2f18295f3d61d64684f4acd62cc8c90, type: 2}
+  briefingCharacters:
+  - {fileID: 11400000, guid: 3fd4b49059cf543a8b1cde1096df763e, type: 2}
+  - {fileID: 11400000, guid: 3fb1b66f753a045848dd0a39f93548d1, type: 2}
   allMaps:
   - {fileID: 11400000, guid: 8b3809973bbdbee42909537db90ce45b, type: 2}
   - {fileID: 11400000, guid: da7e51e37fb187d4fb488868580b13ef, type: 2}
   - {fileID: 11400000, guid: bc27893ca15d02049858a14ffd8d5158, type: 2}
+  - {fileID: 11400000, guid: c64a4d2d181cc41259024b4f923dbd1b, type: 2}
+  - {fileID: 11400000, guid: f7946ad08549f47aea228f0b0e02220a, type: 2}
+  - {fileID: 11400000, guid: 02e44344800994ef39369aa9a123af1e, type: 2}
+  - {fileID: 11400000, guid: a8f2b1614d79043839d8b5e539d08ac2, type: 2}
+  - {fileID: 11400000, guid: 1ce43025fd33c4b5ea77249175a14ffd, type: 2}
+  - {fileID: 11400000, guid: f47a4c74de4bb4a2d994eef4489f1735, type: 2}
   panSpeed: 5
   panEdgeThreshold: 50
   defaultTypingSpeed: 30

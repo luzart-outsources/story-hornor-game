@@ -1,11 +1,14 @@
 namespace Luzart
 {
+    using System.Collections.Generic;
     using UnityEngine;
 
     public class UIMapSelection : UIBase
     {
         [SerializeField] private Transform gridContainer;
         [SerializeField] private MapSelectionItem itemPrefab;
+
+        public List<MapSelectionItem> mapItems = new List<MapSelectionItem>();
 
         public override void Show(System.Action onHideDone)
         {
@@ -15,33 +18,19 @@ namespace Luzart
 
         private void PopulateMapList()
         {
-            ClearContainer();
-
             var config = GameFlowController.Instance.GameConfig;
             if (config == null || config.allMaps == null) return;
 
-            for (int i = 0; i < config.allMaps.Count; i++)
+            MasterHelper.InitListObj(config.allMaps.Count, itemPrefab, mapItems, gridContainer, (item, index) =>
             {
-                var map = config.allMaps[i];
-                if (map == null) continue;
-
-                var item = Instantiate(itemPrefab, gridContainer);
-                item.Init(map, OnMapSelected);
-            }
+                item.gameObject.SetActive(true);
+                item.Init(config.allMaps[index], OnMapSelected);
+            });
         }
 
         private void OnMapSelected(MapSO map)
         {
             GameFlowController.Instance.OnMapSelected(map);
-        }
-
-        private void ClearContainer()
-        {
-            if (gridContainer == null) return;
-            for (int i = gridContainer.childCount - 1; i >= 0; i--)
-            {
-                Destroy(gridContainer.GetChild(i).gameObject);
-            }
         }
     }
 }

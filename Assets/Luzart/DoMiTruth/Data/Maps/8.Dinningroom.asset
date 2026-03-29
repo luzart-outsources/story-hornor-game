@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 552a1848705446648bc0d1c00f06027e, type: 3}
-  m_Name: Map_Floor1
+  m_Name: 8.Dinningroom
   m_EditorClassIdentifier: 
-  mapId: Map_Floor1
-  mapName: Tang 1 - Biet Thu
-  mapThumbnail: {fileID: 0}
+  mapId: DinningRoom
+  mapName: Dinning Room
+  mapThumbnail: {fileID: 21300000, guid: 6e18854be7329496dbe7b87f7782fa6c, type: 3}
   rooms:
-  - {fileID: 11400000, guid: 94cbd16cc09f92141946fb1e642ffc2e, type: 2}
-  - {fileID: 11400000, guid: 36082b8694df2d54c818845cc8768f19, type: 2}
-  - {fileID: 11400000, guid: 70ac8da7a6a74ef46babcd31f785fb2f, type: 2}
+  - {fileID: 11400000, guid: 17cceb6cebb612541bb712e99ba1bdc8, type: 2}
+  - {fileID: 11400000, guid: 62af895cf6333f44682dae1b11b35561, type: 2}
+  - {fileID: 11400000, guid: f614b2dc7213ec74a8ae824d38add439, type: 2}

@@ -47,7 +47,7 @@ namespace Luzart
             var ui = UIManager.Instance.ShowUI<UIBriefing>(UIName.Briefing);
             if (ui != null)
             {
-                ui.StartBriefing(briefing, OnBriefingComplete);
+                ui.StartBriefing(briefing, gameConfig.briefingCharacters, OnBriefingComplete);
             }
             else
             {

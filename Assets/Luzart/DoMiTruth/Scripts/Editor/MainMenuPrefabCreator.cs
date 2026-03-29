@@ -61,7 +61,8 @@ namespace Luzart.Editor
                 "✅ One Click Setup Done!",
                 report + "\n\n" +
                 "Tất cả đã được setup tự động.\n" +
-                "Gán fullBodySprite cho các DialogueCharacterSO (Police, Detective) trong Inspector.",
+                "Tạo BriefingCharacterSO (Create > DoMiTruth > Briefing Character)\n" +
+                "rồi kéo vào GameConfig.briefingCharacters.",
                 "OK");
         }
 
@@ -194,7 +195,7 @@ namespace Luzart.Editor
                 log?.Add("⚠ Dlg_Intro not found at: " + DLG_INTRO_PATH);
             }
 
-            log?.Add("ℹ Gán fullBodySprite cho các DialogueCharacterSO (Police, Detective) trong Inspector");
+            log?.Add("ℹ Tạo BriefingCharacterSO cho mỗi NPC (DoMiTruth/Briefing Character) rồi kéo vào GameConfig.briefingCharacters");
 
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(config);
@@ -350,61 +351,34 @@ namespace Luzart.Editor
             bg.AddComponent<Image>().color = C_BRIEF_BG;
             StretchFull(bg.GetComponent<RectTransform>());
 
-            // NPC Left (left 30%) with CanvasGroup for highlight
-            var npcLeftGo = MakeUI("NPCLeft", root.transform);
-            var nlRect = npcLeftGo.GetComponent<RectTransform>();
-            nlRect.anchorMin = new Vector2(0f, 0f); nlRect.anchorMax = new Vector2(0.3f, 1f);
-            nlRect.offsetMin = new Vector2(20f, 20f); nlRect.offsetMax = new Vector2(0f, -60f);
-            var canvasGroupLeft = npcLeftGo.AddComponent<CanvasGroup>();
-            canvasGroupLeft.alpha = 0.4f;
+            // ── NPC Full Body (left 40%) + CanvasGroup for highlight ──
+            var npcBody = MakeUI("NPCFullBody", root.transform);
+            var nbRect = npcBody.GetComponent<RectTransform>();
+            nbRect.anchorMin = new Vector2(0f, 0f); nbRect.anchorMax = new Vector2(0.4f, 1f);
+            nbRect.offsetMin = new Vector2(30f, 20f); nbRect.offsetMax = new Vector2(0f, -20f);
+            var canvasGroupNPC = npcBody.AddComponent<CanvasGroup>();
 
-            var npcLeftImg = npcLeftGo.AddComponent<Image>();
-            npcLeftImg.preserveAspect = true; npcLeftImg.raycastTarget = false;
-            var animNPCLeft = npcLeftGo.AddComponent<Animator>();
-            animNPCLeft.enabled = false; // disabled by default, enabled at runtime if character has animator
+            var npcImg = npcBody.AddComponent<Image>();
+            npcImg.preserveAspect = true; npcImg.raycastTarget = false;
+            var animNPC = npcBody.AddComponent<Animator>();
+            animNPC.enabled = false;
 
-            var leftLabelGo = MakeUI("Label", npcLeftGo.transform);
-            var llRect = leftLabelGo.GetComponent<RectTransform>();
-            llRect.anchorMin = new Vector2(0f, 0f); llRect.anchorMax = new Vector2(1f, 0f);
-            llRect.pivot = new Vector2(0.5f, 0f);
-            llRect.sizeDelta = new Vector2(0f, 35f);
-            llRect.anchoredPosition = new Vector2(0f, 5f);
-            leftLabelGo.AddComponent<Image>().color = new Color(0.25f, 0.35f, 0.3f, 0.85f);
-            var leftLabelTextGo = MakeUI("Text", leftLabelGo.transform);
-            StretchFull(leftLabelTextGo.GetComponent<RectTransform>());
-            var leftLabelTMP = leftLabelTextGo.AddComponent<TextMeshProUGUI>();
-            leftLabelTMP.text = "NPC LEFT"; leftLabelTMP.fontSize = 18f; leftLabelTMP.fontStyle = FontStyles.Bold;
-            leftLabelTMP.alignment = TextAlignmentOptions.Center;
-            leftLabelTMP.color = C_BRIEF_LABEL; leftLabelTMP.raycastTarget = false;
+            // ── NPC Label (top center, above case board) ──
+            var label = MakeUI("NPCLabel", root.transform);
+            var lRect = label.GetComponent<RectTransform>();
+            lRect.anchorMin = new Vector2(0.5f, 1f); lRect.anchorMax = new Vector2(0.5f, 1f);
+            lRect.pivot = new Vector2(0.5f, 1f);
+            lRect.sizeDelta = new Vector2(250f, 45f);
+            lRect.anchoredPosition = new Vector2(0f, -15f);
+            label.AddComponent<Image>().color = new Color(0.25f, 0.35f, 0.3f, 0.85f);
+            var labelTextGo = MakeUI("Text", label.transform);
+            StretchFull(labelTextGo.GetComponent<RectTransform>());
+            var labelTMP = labelTextGo.AddComponent<TextMeshProUGUI>();
+            labelTMP.text = "POLICE"; labelTMP.fontSize = 22f; labelTMP.fontStyle = FontStyles.Bold;
+            labelTMP.alignment = TextAlignmentOptions.Center;
+            labelTMP.color = C_BRIEF_LABEL; labelTMP.raycastTarget = false;
 
-            // NPC Right (right 30%) with CanvasGroup for highlight
-            var npcRightGo = MakeUI("NPCRight", root.transform);
-            var nrRect = npcRightGo.GetComponent<RectTransform>();
-            nrRect.anchorMin = new Vector2(0.7f, 0f); nrRect.anchorMax = new Vector2(1f, 1f);
-            nrRect.offsetMin = new Vector2(0f, 20f); nrRect.offsetMax = new Vector2(-20f, -60f);
-            var canvasGroupRight = npcRightGo.AddComponent<CanvasGroup>();
-            canvasGroupRight.alpha = 0.4f;
-
-            var npcRightImg = npcRightGo.AddComponent<Image>();
-            npcRightImg.preserveAspect = true; npcRightImg.raycastTarget = false;
-            var animNPCRight = npcRightGo.AddComponent<Animator>();
-            animNPCRight.enabled = false;
-
-            var rightLabelGo = MakeUI("Label", npcRightGo.transform);
-            var rlRect = rightLabelGo.GetComponent<RectTransform>();
-            rlRect.anchorMin = new Vector2(0f, 0f); rlRect.anchorMax = new Vector2(1f, 0f);
-            rlRect.pivot = new Vector2(0.5f, 0f);
-            rlRect.sizeDelta = new Vector2(0f, 35f);
-            rlRect.anchoredPosition = new Vector2(0f, 5f);
-            rightLabelGo.AddComponent<Image>().color = new Color(0.25f, 0.35f, 0.3f, 0.85f);
-            var rightLabelTextGo = MakeUI("Text", rightLabelGo.transform);
-            StretchFull(rightLabelTextGo.GetComponent<RectTransform>());
-            var rightLabelTMP = rightLabelTextGo.AddComponent<TextMeshProUGUI>();
-            rightLabelTMP.text = "NPC RIGHT"; rightLabelTMP.fontSize = 18f; rightLabelTMP.fontStyle = FontStyles.Bold;
-            rightLabelTMP.alignment = TextAlignmentOptions.Center;
-            rightLabelTMP.color = C_BRIEF_LABEL; rightLabelTMP.raycastTarget = false;
-
-            // Settings Button (top right)
+            // ── Settings Button (top right) ──
             var sBtn = MakeUI("BtnSettings", root.transform);
             var sbRect = sBtn.GetComponent<RectTransform>();
             sbRect.anchorMin = sbRect.anchorMax = Vector2.one;
@@ -420,10 +394,10 @@ namespace Luzart.Editor
             sText.alignment = TextAlignmentOptions.Center;
             sText.color = Color.white; sText.raycastTarget = false;
 
-            // Case Board (center)
+            // ── Case Board (center-right, text NPC trái hiện ở đây) ──
             var board = MakeUI("CaseBoard", root.transform);
             var bRect = board.GetComponent<RectTransform>();
-            bRect.anchorMin = new Vector2(0.3f, 0.35f); bRect.anchorMax = new Vector2(0.7f, 0.85f);
+            bRect.anchorMin = new Vector2(0.35f, 0.3f); bRect.anchorMax = new Vector2(0.88f, 0.88f);
             board.AddComponent<Image>().color = C_CASEBOARD;
             var cInfoGo = MakeUI("CaseInfoText", board.transform);
             var ciRect = cInfoGo.GetComponent<RectTransform>();
@@ -433,54 +407,54 @@ namespace Luzart.Editor
             caseInfoTMP.alignment = TextAlignmentOptions.Center;
             caseInfoTMP.color = new Color(0.7f, 0.65f, 0.55f, 1f); caseInfoTMP.raycastTarget = false;
 
-            // Dialogue Box (bottom center)
+            // ── Dialogue Box (bottom right, text NPC phải hiện ở đây) ──
             var dlgBox = MakeUI("DialogueBox", root.transform);
             var dbRect = dlgBox.GetComponent<RectTransform>();
-            dbRect.anchorMin = new Vector2(0.15f, 0f); dbRect.anchorMax = new Vector2(0.85f, 0.3f);
-            dbRect.offsetMin = new Vector2(10f, 20f); dbRect.offsetMax = new Vector2(-10f, 0f);
+            dbRect.anchorMin = new Vector2(0.3f, 0f); dbRect.anchorMax = new Vector2(1f, 0.28f);
+            dbRect.offsetMin = new Vector2(20f, 15f); dbRect.offsetMax = new Vector2(-20f, 0f);
             dlgBox.AddComponent<Image>().color = C_BRIEF_DLG_BG;
 
-            // Portrait
+            // Portrait (right side of dialogue box)
             var port = MakeUI("Portrait", dlgBox.transform);
             var prRect = port.GetComponent<RectTransform>();
-            prRect.anchorMin = new Vector2(0f, 0f); prRect.anchorMax = new Vector2(0f, 1f);
-            prRect.pivot = new Vector2(0f, 0.5f);
+            prRect.anchorMin = new Vector2(1f, 0f); prRect.anchorMax = new Vector2(1f, 1f);
+            prRect.pivot = new Vector2(1f, 0.5f);
             prRect.sizeDelta = new Vector2(100f, 0f);
-            prRect.anchoredPosition = new Vector2(10f, 0f);
+            prRect.anchoredPosition = new Vector2(-10f, 0f);
             var portImg = port.AddComponent<Image>();
             portImg.preserveAspect = true; portImg.raycastTarget = false;
             var animPortrait = port.AddComponent<Animator>();
             animPortrait.enabled = false;
 
-            // Name
+            // Name (top left of dialogue box)
             var nameGo = MakeUI("TxtName", dlgBox.transform);
             var nRect = nameGo.GetComponent<RectTransform>();
             nRect.anchorMin = new Vector2(0f, 1f); nRect.anchorMax = new Vector2(0.7f, 1f);
             nRect.pivot = new Vector2(0f, 1f);
             nRect.sizeDelta = new Vector2(0f, 35f);
-            nRect.anchoredPosition = new Vector2(120f, -5f);
+            nRect.anchoredPosition = new Vector2(15f, -5f);
             var nameTMP = nameGo.AddComponent<TextMeshProUGUI>();
-            nameTMP.text = "Character Name"; nameTMP.fontSize = 20f; nameTMP.fontStyle = FontStyles.Bold;
+            nameTMP.text = ""; nameTMP.fontSize = 20f; nameTMP.fontStyle = FontStyles.Bold;
             nameTMP.alignment = TextAlignmentOptions.MidlineLeft;
             nameTMP.color = C_BRIEF_LABEL; nameTMP.raycastTarget = false;
 
             // Dialogue text
             var dlgTextGo = MakeUI("TxtDialogue", dlgBox.transform);
             var dtRect = dlgTextGo.GetComponent<RectTransform>();
-            dtRect.anchorMin = Vector2.zero; dtRect.anchorMax = new Vector2(0.85f, 0.75f);
-            dtRect.offsetMin = new Vector2(120f, 10f); dtRect.offsetMax = new Vector2(-10f, -5f);
+            dtRect.anchorMin = Vector2.zero; dtRect.anchorMax = new Vector2(0.82f, 0.75f);
+            dtRect.offsetMin = new Vector2(15f, 10f); dtRect.offsetMax = new Vector2(-10f, -5f);
             var dlgTMP = dlgTextGo.AddComponent<TextMeshProUGUI>();
-            dlgTMP.text = "..."; dlgTMP.fontSize = 18f;
+            dlgTMP.text = ""; dlgTMP.fontSize = 18f;
             dlgTMP.alignment = TextAlignmentOptions.TopLeft;
             dlgTMP.color = C_BRIEF_TEXT; dlgTMP.raycastTarget = false;
 
-            // Next button
+            // Next button (bottom right, before portrait)
             var nxtGo = MakeUI("BtnNext", dlgBox.transform);
             var nxRect = nxtGo.GetComponent<RectTransform>();
             nxRect.anchorMin = nxRect.anchorMax = new Vector2(1f, 0f);
             nxRect.pivot = new Vector2(1f, 0f);
             nxRect.sizeDelta = new Vector2(80f, 35f);
-            nxRect.anchoredPosition = new Vector2(-10f, 10f);
+            nxRect.anchoredPosition = new Vector2(-120f, 10f);
             nxtGo.AddComponent<Image>().color = new Color(0.3f, 0.4f, 0.35f, 0.9f);
             var btnNext = nxtGo.AddComponent<Button>();
             var nxLabel = MakeUI("Label", nxtGo.transform);
@@ -490,28 +464,25 @@ namespace Luzart.Editor
             nxTMP.alignment = TextAlignmentOptions.Center;
             nxTMP.color = Color.white; nxTMP.raycastTarget = false;
 
-            // Wire UIBriefing
+            // ── Wire UIBriefing ──
             var ui = root.AddComponent<UIBriefing>();
             ui.uiName = UIName.Briefing;
             var so = new SerializedObject(ui);
-            so.FindProperty("imgNPCLeft").objectReferenceValue = npcLeftImg;
-            so.FindProperty("animNPCLeft").objectReferenceValue = animNPCLeft;
-            so.FindProperty("txtNPCLeftLabel").objectReferenceValue = leftLabelTMP;
-            so.FindProperty("canvasGroupLeft").objectReferenceValue = canvasGroupLeft;
-            so.FindProperty("imgNPCRight").objectReferenceValue = npcRightImg;
-            so.FindProperty("animNPCRight").objectReferenceValue = animNPCRight;
-            so.FindProperty("txtNPCRightLabel").objectReferenceValue = rightLabelTMP;
-            so.FindProperty("canvasGroupRight").objectReferenceValue = canvasGroupRight;
+            so.FindProperty("imgNPCFullBody").objectReferenceValue = npcImg;
+            so.FindProperty("animNPCFullBody").objectReferenceValue = animNPC;
+            so.FindProperty("canvasGroupNPC").objectReferenceValue = canvasGroupNPC;
+            so.FindProperty("txtNPCLabel").objectReferenceValue = labelTMP;
             so.FindProperty("txtCaseInfo").objectReferenceValue = caseInfoTMP;
             so.FindProperty("imgDialoguePortrait").objectReferenceValue = portImg;
             so.FindProperty("animDialoguePortrait").objectReferenceValue = animPortrait;
             so.FindProperty("txtDialogueName").objectReferenceValue = nameTMP;
             so.FindProperty("txtDialogueText").objectReferenceValue = dlgTMP;
+            so.FindProperty("dialogueBoxRoot").objectReferenceValue = dlgBox;
             so.FindProperty("btnNext").objectReferenceValue = btnNext;
             so.FindProperty("btnSettings").objectReferenceValue = btnSettings;
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            log?.Add("✅ Briefing prefab created (2 NPC slots with highlight)");
+            log?.Add("✅ Briefing prefab created");
             return root;
         }
 
