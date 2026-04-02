@@ -8,6 +8,7 @@ namespace Luzart
 
         [SerializeField] private AudioSource musicSource;
         [SerializeField] private AudioSource sfxSource;
+        [SerializeField] private SoundConfigSO soundConfig;
 
         private void Awake()
         {
@@ -26,16 +27,7 @@ namespace Luzart
 
         public void PlaySFX(AudioClip clip)
         {
-            if (clip == null)
-            {
-                Debug.LogWarning("[SoundManager] PlaySFX: clip is null");
-                return;
-            }
-            if (sfxSource == null)
-            {
-                Debug.LogWarning("[SoundManager] PlaySFX: sfxSource is null");
-                return;
-            }
+            if (clip == null || sfxSource == null) return;
             sfxSource.PlayOneShot(clip);
         }
 
@@ -58,42 +50,56 @@ namespace Luzart
             if (musicSource != null) musicSource.Stop();
         }
 
-        // ========== SHORTCUT SFX (dùng GameConfig) ==========
-
-        public void PlayDialogueSFX()
+        public void PlayBackgroundMusic()
         {
-            var cfg = GameFlowController.Instance?.GameConfig;
-            if (cfg != null) PlaySFX(cfg.sfxDialogue);
+            if (soundConfig != null) PlayMusic(soundConfig.musicBackground);
         }
 
-        public void PlayMenuClickSFX()
+        // ========== SHORTCUT SFX ==========
+
+        public void PlayTypingSFX()
         {
-            var cfg = GameFlowController.Instance?.GameConfig;
-            if (cfg != null) PlaySFX(cfg.sfxMenuClick);
+            if (soundConfig != null) PlaySFX(soundConfig.sfxTyping);
+        }
+
+        public void PlayCollectItemSFX()
+        {
+            if (soundConfig != null) PlaySFX(soundConfig.sfxCollectItem);
         }
 
         public void PlayInteractSFX()
         {
-            var cfg = GameFlowController.Instance?.GameConfig;
-            if (cfg != null) PlaySFX(cfg.sfxInteract);
+            if (soundConfig != null) PlaySFX(soundConfig.sfxInteract);
         }
 
         public void PlayPasscodeInputSFX()
         {
-            var cfg = GameFlowController.Instance?.GameConfig;
-            if (cfg != null) PlaySFX(cfg.sfxPasscodeInput);
+            if (soundConfig != null) PlaySFX(soundConfig.sfxPasscodeInput);
         }
 
         public void PlayPasscodeWrongSFX()
         {
-            var cfg = GameFlowController.Instance?.GameConfig;
-            if (cfg != null) PlaySFX(cfg.sfxPasscodeWrong);
+            if (soundConfig != null) PlaySFX(soundConfig.sfxPasscodeWrong);
         }
 
         public void PlaySafeOpenSFX()
         {
-            var cfg = GameFlowController.Instance?.GameConfig;
-            if (cfg != null) PlaySFX(cfg.sfxSafeOpen);
+            if (soundConfig != null) PlaySFX(soundConfig.sfxSafeOpen);
+        }
+
+        public void PlayMenuClickSFX()
+        {
+            if (soundConfig != null) PlaySFX(soundConfig.sfxMenuClick);
+        }
+
+        public void PlayNotebookFlipSFX()
+        {
+            if (soundConfig != null) PlaySFX(soundConfig.sfxNotebookFlip);
+        }
+
+        public void PlayStartGameSFX()
+        {
+            if (soundConfig != null) PlaySFX(soundConfig.sfxStartGame);
         }
 
         // ========== VOLUME ==========

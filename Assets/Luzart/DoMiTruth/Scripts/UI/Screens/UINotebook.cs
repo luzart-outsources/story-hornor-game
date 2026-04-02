@@ -228,6 +228,7 @@ namespace Luzart
         {
             if (currentPage <= 0) return;
             currentPage--;
+            SoundManager.Instance?.PlayNotebookFlipSFX();
             ShowCurrentPage();
         }
 
@@ -236,6 +237,7 @@ namespace Luzart
             int totalPages = Mathf.CeilToInt(entries.Count / 2f);
             if (currentPage >= totalPages - 1) return;
             currentPage++;
+            SoundManager.Instance?.PlayNotebookFlipSFX();
             ShowCurrentPage();
         }
     }

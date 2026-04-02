@@ -15,6 +15,7 @@ namespace Luzart
             if (string.IsNullOrEmpty(clueId) || Data.collectedClueIds.Contains(clueId)) return;
             Data.collectedClueIds.Add(clueId);
             Save();
+            SoundManager.Instance?.PlayCollectItemSFX();
             onClueCollected?.Raise(clueId);
             onNotebookUpdated?.Raise();
         }

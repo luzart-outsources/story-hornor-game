@@ -68,7 +68,7 @@ namespace Luzart.Editor
         public static void CreateAllSound()
         {
             var log = new List<string>();
-            AssignSFXToGameConfig(log);
+            CreateAndAssignSoundConfig(log);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             EditorUtility.DisplayDialog("✅ Sound Setup Done!", string.Join("\n", log), "OK");
@@ -1779,47 +1779,61 @@ namespace Luzart.Editor
         //  SFX AUTO-ASSIGN
         // ================================================================
 
-        private static void AssignSFXToGameConfig(List<string> log)
+        private static void CreateAndAssignSoundConfig(List<string> log)
         {
-            var config = AssetDatabase.LoadAssetAtPath<GameConfigSO>(
-                DATA_ROOT + "/Config/GameConfig.asset");
-            if (config == null)
-            {
-                log?.Add("⚠️ GameConfig.asset not found, skipped SFX assign");
-                return;
-            }
+            string cfgPath = DATA_ROOT + "/Config/SoundConfig.asset";
+            var cfg = LoadOrCreate<SoundConfigSO>(cfgPath, "SoundConfig");
 
-            config.sfxDialogue = LoadAudioClip("Sound effect dialogue");
-            config.sfxMenuClick = LoadAudioClip("Sound lúc chọn các mục ở Menu (Settings Guide, Quitgame)");
-            config.sfxInteract = LoadAudioClip("Tuong tac do vat ingame");
-            config.sfxPasscodeInput = LoadAudioClip("Nhap mat khau ket sat");
-            config.sfxPasscodeWrong = LoadAudioClip("Sai mat khau");
-            config.sfxSafeOpen = LoadAudioClip("Sound mo ket sat");
+            // Assign audio clips từ file names
+            cfg.sfxTyping = LoadAudioClip("Sound effect dialogue");
+            cfg.sfxMenuClick = LoadAudioClip("Sound lúc chọn các mục ở Menu (Settings Guide, Quitgame)");
+            cfg.sfxInteract = LoadAudioClip("Tuong tac do vat ingame");
+            cfg.sfxCollectItem = LoadAudioClip("Tuong tac do vat ingame"); // dùng chung tạm
+            cfg.sfxPasscodeInput = LoadAudioClip("Nhap mat khau ket sat");
+            cfg.sfxPasscodeWrong = LoadAudioClip("Sai mat khau");
+            cfg.sfxSafeOpen = LoadAudioClip("Sound mo ket sat");
+            cfg.sfxStartGame = LoadAudioClip("Sound effect luc start game");
 
-            EditorUtility.SetDirty(config);
+            EditorUtility.SetDirty(cfg);
 
             int count = 0;
-            if (config.sfxDialogue != null) count++;
-            if (config.sfxMenuClick != null) count++;
-            if (config.sfxInteract != null) count++;
-            if (config.sfxPasscodeInput != null) count++;
-            if (config.sfxPasscodeWrong != null) count++;
-            if (config.sfxSafeOpen != null) count++;
+            if (cfg.sfxTyping != null) count++;
+            if (cfg.sfxMenuClick != null) count++;
+            if (cfg.sfxInteract != null) count++;
+            if (cfg.sfxCollectItem != null) count++;
+            if (cfg.sfxPasscodeInput != null) count++;
+            if (cfg.sfxPasscodeWrong != null) count++;
+            if (cfg.sfxSafeOpen != null) count++;
+            if (cfg.sfxStartGame != null) count++;
 
-            log?.Add($"✅ SFX: {count}/6 audio clips assigned to GameConfig");
+            // Assign SoundConfig vào SoundManager trong scene
+            var sm = Object.FindObjectOfType<SoundManager>();
+            if (sm != null)
+            {
+                var so = new SerializedObject(sm);
+                so.FindProperty("soundConfig").objectReferenceValue = cfg;
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(sm);
+                log?.Add("✅ SoundConfig assigned to SoundManager in scene");
+            }
+            else
+            {
+                log?.Add("⚠️ SoundManager not found in scene — mở scene rồi bấm lại");
+            }
+
+            log?.Add($"✅ SFX: {count}/8 audio clips assigned to SoundConfig.asset");
         }
 
         private static AudioClip LoadAudioClip(string fileName)
         {
-            string path = SFX_ROOT + "/" + fileName + ".mp3";
-            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-            if (clip == null)
+            string[] exts = { ".mp3", ".wav", ".m4a", ".ogg" };
+            foreach (var ext in exts)
             {
-                // Try wav
-                path = SFX_ROOT + "/" + fileName + ".wav";
-                clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                string path = SFX_ROOT + "/" + fileName + ext;
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                if (clip != null) return clip;
             }
-            return clip;
+            return null;
         }
 
         // ================================================================

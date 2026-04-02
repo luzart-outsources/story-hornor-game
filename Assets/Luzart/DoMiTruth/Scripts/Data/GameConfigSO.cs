@@ -35,18 +35,5 @@ namespace Luzart
         [Header("Effects")]
         public float clueCollectFlyDuration = 0.8f;
 
-        [Header("Sound Effects")]
-        [Tooltip("Sound khi dialogue text hiện ra")]
-        public AudioClip sfxDialogue;
-        [Tooltip("Sound khi bấm nút ở menu (Settings, Guide, Quit)")]
-        public AudioClip sfxMenuClick;
-        [Tooltip("Sound khi tương tác đồ vật ingame")]
-        public AudioClip sfxInteract;
-        [Tooltip("Sound khi nhập mật khẩu két sắt")]
-        public AudioClip sfxPasscodeInput;
-        [Tooltip("Sound khi sai mật khẩu")]
-        public AudioClip sfxPasscodeWrong;
-        [Tooltip("Sound khi mở két sắt thành công")]
-        public AudioClip sfxSafeOpen;
     }
 }
