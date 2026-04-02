@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8f78b9115cd7474b86f1c59c2076e3f, type: 3}
+  m_Name: SoundConfig
+  m_EditorClassIdentifier: 
+  musicBackground: {fileID: 0}
+  sfxTyping: {fileID: 8300000, guid: 9b3713be180dc4c02b628ee8efd0f298, type: 3}
+  sfxCollectItem: {fileID: 8300000, guid: 41d28da80f17641d7973167d82c686be, type: 3}
+  sfxInteract: {fileID: 8300000, guid: 41d28da80f17641d7973167d82c686be, type: 3}
+  sfxPasscodeInput: {fileID: 8300000, guid: 13edca473bbc141bc9507906c648cefe, type: 3}
+  sfxPasscodeWrong: {fileID: 8300000, guid: 696467c384a7c4b67a47f1fb1f21d457, type: 3}
+  sfxSafeOpen: {fileID: 8300000, guid: e69e951880188487da3971ad91c6bd60, type: 3}
+  sfxMenuClick: {fileID: 8300000, guid: 6eac6a9d261224ad69c7a7b608af62c0, type: 3}
+  sfxNotebookFlip: {fileID: 0}
+  sfxStartGame: {fileID: 0}
