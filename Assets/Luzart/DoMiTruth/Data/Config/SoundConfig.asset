@@ -9,16 +9,153 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a8f78b9115cd7474b86f1c59c2076e3f, type: 3}
+  m_Script: {fileID: 11500000, guid: dbed5ae3aad694bc4b1b9cd150a949f5, type: 3}
   m_Name: SoundConfig
   m_EditorClassIdentifier: 
-  musicBackground: {fileID: 0}
-  sfxTyping: {fileID: 8300000, guid: 9b3713be180dc4c02b628ee8efd0f298, type: 3}
-  sfxCollectItem: {fileID: 8300000, guid: 41d28da80f17641d7973167d82c686be, type: 3}
-  sfxInteract: {fileID: 8300000, guid: 41d28da80f17641d7973167d82c686be, type: 3}
-  sfxPasscodeInput: {fileID: 8300000, guid: 13edca473bbc141bc9507906c648cefe, type: 3}
-  sfxPasscodeWrong: {fileID: 8300000, guid: 696467c384a7c4b67a47f1fb1f21d457, type: 3}
-  sfxSafeOpen: {fileID: 8300000, guid: e69e951880188487da3971ad91c6bd60, type: 3}
-  sfxMenuClick: {fileID: 8300000, guid: 6eac6a9d261224ad69c7a7b608af62c0, type: 3}
-  sfxNotebookFlip: {fileID: 0}
+  entries:
+  - id: 100
+    category: 0
+    clips:
+    - {fileID: 8300000, guid: 15626cd411c302d4f920129af289b3c1, type: 3}
+    volume: 1
+    volumeRandom: {x: 1, y: 1}
+    pitchRandom: {x: 1, y: 1}
+    minIntervalBetweenPlays: 0
+    maxConcurrent: 0
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 1
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 1
+    fadeOut: 1
+  - id: 200
+    category: 4
+    clips:
+    - {fileID: 8300000, guid: b3ecbdde74cd849458b4c384e0698012, type: 3}
+    volume: 1
+    volumeRandom: {x: 0.9, y: 1}
+    pitchRandom: {x: 0.95, y: 1.05}
+    minIntervalBetweenPlays: 0.1
+    maxConcurrent: 10
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 0
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 0
+    fadeOut: 0
+  - id: 300
+    category: 1
+    clips:
+    - {fileID: 8300000, guid: cb619b9d2c865a543b4285cec87a807d, type: 3}
+    volume: 1
+    volumeRandom: {x: 1, y: 1}
+    pitchRandom: {x: 1, y: 1}
+    minIntervalBetweenPlays: 0.05
+    maxConcurrent: 0
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 0
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 0
+    fadeOut: 0
+  - id: 301
+    category: 1
+    clips:
+    - {fileID: 8300000, guid: cb619b9d2c865a543b4285cec87a807d, type: 3}
+    volume: 1
+    volumeRandom: {x: 1, y: 1}
+    pitchRandom: {x: 1, y: 1}
+    minIntervalBetweenPlays: 0.05
+    maxConcurrent: 0
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 0
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 0
+    fadeOut: 0
+  - id: 400
+    category: 2
+    clips:
+    - {fileID: 8300000, guid: ce87eab421b72aa4a94695c65aff6cf6, type: 3}
+    volume: 1
+    volumeRandom: {x: 1, y: 1}
+    pitchRandom: {x: 0.97, y: 1.03}
+    minIntervalBetweenPlays: 0.04
+    maxConcurrent: 0
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 0
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 0
+    fadeOut: 0
+  - id: 401
+    category: 2
+    clips:
+    - {fileID: 8300000, guid: a07bde7249de8bc48be0015d17a88503, type: 3}
+    volume: 1
+    volumeRandom: {x: 1, y: 1}
+    pitchRandom: {x: 1, y: 1}
+    minIntervalBetweenPlays: 0
+    maxConcurrent: 0
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 0
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 0
+    fadeOut: 0
+  - id: 402
+    category: 2
+    clips:
+    - {fileID: 8300000, guid: 305cfd4db359a2a408f2d12a2c917948, type: 3}
+    volume: 1
+    volumeRandom: {x: 1, y: 1}
+    pitchRandom: {x: 1, y: 1}
+    minIntervalBetweenPlays: 0
+    maxConcurrent: 0
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 0
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 0
+    fadeOut: 0
+  - id: 501
+    category: 2
+    clips:
+    - {fileID: 8300000, guid: 951742c4daea9394e80d3ec9c27e32a1, type: 3}
+    volume: 1
+    volumeRandom: {x: 1, y: 1}
+    pitchRandom: {x: 1, y: 1}
+    minIntervalBetweenPlays: 0.15
+    maxConcurrent: 0
+    stealOldestWhenFull: 1
+    interruptSelf: 0
+    loop: 0
+    priority: 128
+    ignoreListenerPause: 0
+    spatialBlend: 0
+    fadeIn: 0
+    fadeOut: 0
+  musicBackground: {fileID: 8300000, guid: 15626cd411c302d4f920129af289b3c1, type: 3}
+  sfxTyping: {fileID: 8300000, guid: b3ecbdde74cd849458b4c384e0698012, type: 3}
+  sfxCollectItem: {fileID: 8300000, guid: cb619b9d2c865a543b4285cec87a807d, type: 3}
+  sfxInteract: {fileID: 8300000, guid: cb619b9d2c865a543b4285cec87a807d, type: 3}
+  sfxPasscodeInput: {fileID: 8300000, guid: ce87eab421b72aa4a94695c65aff6cf6, type: 3}
+  sfxPasscodeWrong: {fileID: 8300000, guid: a07bde7249de8bc48be0015d17a88503, type: 3}
+  sfxSafeOpen: {fileID: 8300000, guid: 305cfd4db359a2a408f2d12a2c917948, type: 3}
+  sfxMenuClick: {fileID: 0}
+  sfxNotebookFlip: {fileID: 8300000, guid: 951742c4daea9394e80d3ec9c27e32a1, type: 3}
   sfxStartGame: {fileID: 0}

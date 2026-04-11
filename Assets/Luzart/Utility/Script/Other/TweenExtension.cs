@@ -110,8 +110,21 @@ namespace Luzart
             float charPerSecond,
             Action onCharAdded)
         {
+            return DOSetTextCharByChar(text, content, charPerSecond, _ => onCharAdded?.Invoke());
+        }
+
+        /// <summary>
+        /// DOSetTextCharByChar với callback trả về ký tự vừa hiện.
+        /// </summary>
+        public static Tweener DOSetTextCharByChar(
+            this TMP_Text text,
+            string content,
+            float charPerSecond,
+            Action<char> onCharAdded)
+        {
             if (text == null) return null;
             if (charPerSecond <= 0f) charPerSecond = 1f;
+            if (content == null) content = string.Empty;
 
             text.text = string.Empty;
             int totalChars = content.Length;
@@ -123,9 +136,14 @@ namespace Luzart
                     x =>
                     {
                         if (x <= lastIndex) return;
+                        int previousIndex = lastIndex;
                         lastIndex = x;
                         text.text = content.Substring(0, lastIndex);
-                        onCharAdded?.Invoke();
+
+                        for (int i = previousIndex; i < lastIndex; i++)
+                        {
+                            onCharAdded?.Invoke(content[i]);
+                        }
                     },
                     totalChars,
                     duration

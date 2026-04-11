@@ -635,6 +635,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   musicSource: {fileID: 1015103386}
   sfxSource: {fileID: 1015103385}
+  soundConfig: {fileID: 11400000, guid: 3c16de7b7a6c28d46af707408c030fc5, type: 2}
 --- !u!4 &1015103388
 Transform:
   m_ObjectHideFlags: 0

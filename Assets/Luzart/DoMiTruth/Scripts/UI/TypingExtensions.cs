@@ -13,20 +13,17 @@ namespace Luzart
         /// </summary>
         public static Tweener DOSetTextWithSound(this TMP_Text tmp, string text, float charsPerSecond)
         {
-            int lastCharCount = 0;
+            if (tmp == null) return null;
+            text ??= string.Empty;
 
-            return tmp.DOSetTextCharByChar(text, charsPerSecond)
-                .OnUpdate(() =>
+            return tmp.DOSetTextCharByChar(text, charsPerSecond, visibleChar =>
                 {
-                    // Đếm ký tự hiện tại đang hiển thị
-                    int visibleCount = tmp.textInfo.characterCount;
-                    if (visibleCount > lastCharCount)
-                    {
-                        lastCharCount = visibleCount;
-                        SoundManager.Instance?.PlayTypingSFX();
-                    }
+                    if (char.IsWhiteSpace(visibleChar)) return;
+                    SoundManager.Instance?.PlayTypingSFX();
                 })
-                .OnKill(() => lastCharCount = 0);
+                .OnKill(() =>
+                {
+                });
         }
     }
 }

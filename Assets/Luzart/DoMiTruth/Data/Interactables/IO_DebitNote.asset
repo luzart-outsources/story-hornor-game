@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectId: io_debit_note
   hitboxSize: {x: 100, y: 100}
-  isOneTimeOnly: 1
+  isOneTimeOnly: 0
   highlightSprite: {fileID: 0}
   clue: {fileID: 11400000, guid: cafb881d7175047f187c076c17e06973, type: 2}

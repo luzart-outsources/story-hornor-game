@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectId: io_contact_info
   hitboxSize: {x: 100, y: 100}
-  isOneTimeOnly: 1
+  isOneTimeOnly: 0
   highlightSprite: {fileID: 0}
   clue: {fileID: 11400000, guid: 9e0457ffe433e4ba59ace42424b7bb50, type: 2}
