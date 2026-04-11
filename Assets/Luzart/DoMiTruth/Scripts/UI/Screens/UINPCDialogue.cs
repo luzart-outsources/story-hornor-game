@@ -148,7 +148,7 @@ namespace Luzart
                 {
                     txtDetectiveText.text = "";
                     float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
-                    typingTweener = txtDetectiveText.DOSetTextCharByChar(line.text, speed);
+                    typingTweener = txtDetectiveText.DOSetTextWithSound(line.text, speed);
                 }
             }
             else
@@ -164,7 +164,7 @@ namespace Luzart
                 {
                     txtBoardText.text = "";
                     float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
-                    typingTweener = txtBoardText.DOSetTextCharByChar(line.text, speed);
+                    typingTweener = txtBoardText.DOSetTextWithSound(line.text, speed);
                 }
             }
         }
@@ -328,7 +328,7 @@ namespace Luzart
             if (txtBoardText != null)
             {
                 float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
-                var tweener = txtBoardText.DOSetTextCharByChar(line.text, speed);
+                var tweener = txtBoardText.DOSetTextWithSound(line.text, speed);
                 DialogueManager.Instance.SetTypingTweener(tweener);
             }
         }

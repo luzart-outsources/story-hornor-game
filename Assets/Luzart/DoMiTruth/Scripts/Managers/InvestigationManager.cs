@@ -7,7 +7,6 @@ namespace Luzart
     public class InvestigationManager : Singleton<InvestigationManager>
     {
         private RoomSO currentRoom;
-
         private GameObject currentRoomInstance;
 
         public RoomSO CurrentRoom => currentRoom;
@@ -30,14 +29,10 @@ namespace Luzart
 
             var ui = UIManager.Instance.ShowUI<UIInvestigation>(UIName.Investigation);
             if (ui != null)
-            {
                 ui.LoadRoom(room);
-            }
 
             if (room.entryDialogue != null)
-            {
                 DialogueManager.Instance.StartDialogue(room.entryDialogue);
-            }
         }
 
         public void OnObjectClicked(InteractableObject obj)
@@ -46,21 +41,37 @@ namespace Luzart
 
             var data = obj.Data;
 
+            // One-time check
             if (data.isOneTimeOnly && GameDataManager.Instance.HasInteracted(data.objectId))
                 return;
 
-            if (data.isOneTimeOnly)
+            // Prerequisite check — quyết định chạy chain nào
+            bool prereqMet = data.CheckPrerequisites();
+
+            if (!prereqMet)
             {
-                GameDataManager.Instance.MarkInteracted(data.objectId);
+                // Chưa đủ điều kiện
+                if (data.onPrerequisiteNotMet != null && data.onPrerequisiteNotMet.Count > 0)
+                    StartCoroutine(ExecuteActionChain(data.onPrerequisiteNotMet));
+                return;
             }
 
+            // Đủ điều kiện — đánh dấu one-time nếu cần
+            if (data.isOneTimeOnly)
+                GameDataManager.Instance.MarkInteracted(data.objectId);
+
+            // Xử lý theo loại SO (type-specific behavior)
             if (data is ClueInteractableSO clueData)
                 HandleClue(clueData, data.isOneTimeOnly ? obj : null);
             else if (data is NPCInteractableSO npcData)
                 HandleNPC(npcData, data.isOneTimeOnly ? obj : null);
             else if (data is LockedItemInteractableSO lockData)
                 HandleLockedItem(lockData, data.isOneTimeOnly ? obj : null);
-            // DecorationInteractableSO → không làm gì
+            else
+            {
+                // Generic: chạy onInteract chain
+                StartCoroutine(ExecuteActionChain(data.onInteract));
+            }
         }
 
         private void HandleClue(ClueInteractableSO data, InteractableObject objToHide = null)
@@ -71,9 +82,12 @@ namespace Luzart
 
             var ui = UIManager.Instance.ShowUI<UIClueDetail>(UIName.ClueDetail);
             if (ui != null)
-            {
-                ui.Init(data.clue, () => HideIfNeeded(objToHide));
-            }
+                ui.Init(data.clue, () =>
+                {
+                    HideIfNeeded(objToHide);
+                    if (data.onInteract != null && data.onInteract.Count > 0)
+                        StartCoroutine(ExecuteActionChain(data.onInteract));
+                });
         }
 
         private void HandleNPC(NPCInteractableSO data, InteractableObject objToHide = null)
@@ -81,21 +95,23 @@ namespace Luzart
             var dialogueUI = UIManager.Instance.ShowUI<UINPCDialogue>(UIName.NPCDialogue);
             if (dialogueUI == null) return;
 
-            System.Action onComplete = () => HideIfNeeded(objToHide);
+            System.Action onComplete = () =>
+            {
+                HideIfNeeded(objToHide);
+                if (data.onInteract != null && data.onInteract.Count > 0)
+                    StartCoroutine(ExecuteActionChain(data.onInteract));
+            };
 
-            // Branching dialogue (có dialogue tree)
             if (data.dialogueTree != null)
             {
                 dialogueUI.StartBranchingDialogue(
                     data.dialogueTree,
                     data.npcFullBodySprite,
                     data.npcFullBodyAnimator,
-                    onComplete: onComplete
-                );
+                    onComplete: onComplete);
                 return;
             }
 
-            // Fallback: linear dialogue
             if (data.fallbackDialogue != null)
             {
                 var npcChar = data.fallbackDialogue.lines.Count > 0
@@ -107,8 +123,7 @@ namespace Luzart
                     data.npcFullBodySprite,
                     data.npcFullBodyAnimator,
                     npcChar,
-                    onComplete: onComplete
-                );
+                    onComplete: onComplete);
             }
         }
 
@@ -136,8 +151,7 @@ namespace Luzart
                     onFail: () =>
                     {
                         StartCoroutine(ExecuteActionChain(data.onUnlockFail));
-                    }
-                );
+                    });
             }
         }
 

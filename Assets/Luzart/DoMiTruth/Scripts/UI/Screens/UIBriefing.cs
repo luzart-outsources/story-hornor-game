@@ -170,14 +170,13 @@ namespace Luzart
             {
                 txtCaseInfo.text = "";
                 float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
-                typingTweener = txtCaseInfo.DOSetTextCharByChar(line.text, speed);
+                typingTweener = txtCaseInfo.DOSetTextWithSound(line.text, speed);
             }
         }
 
         /// <summary>NPC phải nói → text trong dialogue box.</summary>
         private void ShowRightLine(DialogueLine line)
         {
-            SoundManager.Instance?.PlayTypingSFX();
             // Hiện dialogue box
             if (dialogueBoxRoot != null)
                 dialogueBoxRoot.SetActive(true);
@@ -198,7 +197,7 @@ namespace Luzart
             {
                 txtDialogueText.text = "";
                 float speed = line.typingSpeed > 0 ? line.typingSpeed : 30f;
-                typingTweener = txtDialogueText.DOSetTextCharByChar(line.text, speed);
+                typingTweener = txtDialogueText.DOSetTextWithSound(line.text, speed);
             }
         }
 

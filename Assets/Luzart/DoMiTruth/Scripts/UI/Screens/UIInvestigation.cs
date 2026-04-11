@@ -55,5 +55,36 @@ namespace Luzart
         {
             UIManager.Instance.ShowUI(UIName.Pause);
         }
+
+        // ========== Helpers cho ActionStep ==========
+
+        /// <summary>Image background của room (child đầu tiên có Image trong roomInstance).</summary>
+        public Image GetRoomBackground()
+        {
+            if (currentRoomInstance == null) return null;
+            return currentRoomInstance.GetComponentInChildren<Image>();
+        }
+
+        /// <summary>Tìm InteractableObject trong room khớp với SO data.</summary>
+        public InteractableObject FindPropByData(InteractableObjectSO data)
+        {
+            if (currentRoomInstance == null || data == null) return null;
+
+            var all = currentRoomInstance.GetComponentsInChildren<InteractableObject>(true);
+            foreach (var io in all)
+            {
+                if (io.Data == data)
+                    return io;
+            }
+            return null;
+        }
+
+        /// <summary>Container để spawn prop mới vào.</summary>
+        public Transform GetRoomContainer()
+        {
+            if (currentRoomInstance != null)
+                return currentRoomInstance.transform;
+            return roomContainer;
+        }
     }
 }
