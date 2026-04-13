@@ -17,13 +17,10 @@ namespace Luzart
             text ??= string.Empty;
 
             return tmp.DOSetTextCharByChar(text, charsPerSecond, visibleChar =>
-                {
-                    if (char.IsWhiteSpace(visibleChar)) return;
-                    SoundManager.Instance?.PlayTypingSFX();
-                })
-                .OnKill(() =>
-                {
-                });
+            {
+                if (char.IsWhiteSpace(visibleChar)) return;
+                SoundManager.Instance?.PlayTypingSFX();
+            });
         }
     }
 }

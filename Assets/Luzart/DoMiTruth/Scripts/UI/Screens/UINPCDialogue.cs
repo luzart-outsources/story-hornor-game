@@ -133,7 +133,6 @@ namespace Luzart
             var line = currentLines[currentLineIndex];
             HideChoices();
             ShowNextButton(true);
-            SoundManager.Instance?.PlayTypingSFX();
 
             bool isDetective = IsDetectiveSpeaking(line);
 
