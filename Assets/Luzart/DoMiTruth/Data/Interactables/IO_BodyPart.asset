@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84a708167c789454f9160e18a3ac731a, type: 3}
+  m_Name: IO_BodyPart
+  m_EditorClassIdentifier: 
+  objectId: io_body_part
+  hitboxSize: {x: 234, y: 215}
+  isOneTimeOnly: 1
+  highlightSprite: {fileID: 21300000, guid: 5290353c0a77a8b448ccada4011bd2f1, type: 3}
+  showConditions:
+  - type: 1
+    clueRef: {fileID: 0}
+    interactableRef: {fileID: 11400000, guid: e4447ceae0cde164f9727c1c996a5baa, type: 2}
+    negate: 0
+  prerequisites: []
+  onPrerequisiteNotMet: []
+  onInteract: []
+  clue: {fileID: 11400000, guid: 57d0162322dec194bb325a9821c9b519, type: 2}

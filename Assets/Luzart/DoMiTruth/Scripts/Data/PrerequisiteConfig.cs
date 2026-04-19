@@ -21,25 +21,35 @@ namespace Luzart
         [Tooltip("Dùng khi type = HasInteracted hoặc IsUnlocked")]
         public InteractableObjectSO interactableRef;
 
+        [Tooltip("Đảo ngược kết quả. VD: negate + IsUnlocked = hiện khi CHƯA unlock.")]
+        public bool negate;
+
         public bool Evaluate()
         {
             var gdm = GameDataManager.Instance;
             if (gdm == null) return false;
 
+            bool result;
             switch (type)
             {
                 case PrerequisiteType.HasClue:
-                    return clueRef != null && gdm.HasClue(clueRef.clueId);
+                    result = clueRef != null && gdm.HasClue(clueRef.clueId);
+                    break;
 
                 case PrerequisiteType.HasInteracted:
-                    return interactableRef != null && gdm.HasInteracted(interactableRef.objectId);
+                    result = interactableRef != null && gdm.HasInteracted(interactableRef.objectId);
+                    break;
 
                 case PrerequisiteType.IsUnlocked:
-                    return interactableRef != null && gdm.IsItemUnlocked(interactableRef.objectId);
+                    result = interactableRef != null && gdm.IsItemUnlocked(interactableRef.objectId);
+                    break;
 
                 default:
-                    return false;
+                    result = false;
+                    break;
             }
+
+            return negate ? !result : result;
         }
     }
 }

@@ -14,6 +14,7 @@ namespace Luzart
         {
             base.Show(onHideDone);
             PopulateMapList();
+            SoundManager.Instance.PlayBackgroundMusic();
         }
 
         private void PopulateMapList()

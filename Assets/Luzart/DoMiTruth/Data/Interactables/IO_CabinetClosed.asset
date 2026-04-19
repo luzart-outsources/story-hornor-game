@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3d3c4f4e77ff4a7aa7bf2d0173d144d, type: 3}
+  m_Name: IO_CabinetClosed
+  m_EditorClassIdentifier: 
+  objectId: io_cabinet_closed
+  hitboxSize: {x: 681, y: 660}
+  isOneTimeOnly: 1
+  highlightSprite: {fileID: 21300000, guid: f2821bdc1b24419479bb09879f865720, type: 3}
+  showConditions: []
+  prerequisites:
+  - type: 0
+    clueRef: {fileID: 11400000, guid: f5ccb5f047d51ec459ce51cbd001b732, type: 2}
+    interactableRef: {fileID: 0}
+    negate: 0
+  onPrerequisiteNotMet:
+  - {fileID: 11400000, guid: e18a523117249304a86fcb5a5fd7aa82, type: 2}
+  onInteract:
+  - {fileID: 11400000, guid: 4ed46a032a9fa6b409221a22f3e3ee01, type: 2}
+  - {fileID: 11400000, guid: f3ab3c6994ed44b4abcd1cad3119b40a, type: 2}
+  - {fileID: 11400000, guid: 45cab568916ff164f8cd286d50e6ae3d, type: 2}

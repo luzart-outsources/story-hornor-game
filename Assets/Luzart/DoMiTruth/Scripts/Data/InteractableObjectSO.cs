@@ -11,6 +11,10 @@ namespace Luzart
         public bool isOneTimeOnly;
         public Sprite highlightSprite;
 
+        [Header("Visibility on Room Load (AND logic)")]
+        [Tooltip("Điều kiện để prop HIỆN khi vào room. Để trống = luôn hiện. Tất cả phải thỏa.")]
+        public List<PrerequisiteConfig> showConditions = new List<PrerequisiteConfig>();
+
         [Header("Prerequisites (AND logic — tất cả phải thỏa)")]
         [Tooltip("Để trống = không cần điều kiện")]
         public List<PrerequisiteConfig> prerequisites = new List<PrerequisiteConfig>();

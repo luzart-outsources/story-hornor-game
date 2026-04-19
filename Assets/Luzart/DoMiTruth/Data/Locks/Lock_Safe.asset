@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: Lock_Safe
   m_EditorClassIdentifier: 
   lockType: 0
-  passcode: 1945
-  hintText: 'Goi y: Nam lich su quan trong'
+  passcode: 6893
+  swipePattern: 
+  hintText: Try the combination...

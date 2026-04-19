@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5b8688f3b2aa2046aeb30f534fe3fd9, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: 
-  introCutscene: {fileID: 0}
-  cutsceneDuration: 30
-  skipButtonDelay: 0
+  introCutscene: {fileID: 32900000, guid: 116ce17c7d4bbb444bf83f31b747b70f, type: 3}
+  cutsceneDuration: 15
+  skipButtonDelay: 15
   briefingDialogue: {fileID: 11400000, guid: c2f18295f3d61d64684f4acd62cc8c90, type: 2}
   briefingCharacters:
   - {fileID: 11400000, guid: 3fd4b49059cf543a8b1cde1096df763e, type: 2}
@@ -40,6 +40,21 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9dacd26f181074267833d9d96d948216, type: 2}
   - {fileID: 11400000, guid: 8b295544167a2456e802d40c4c98a280, type: 2}
   - {fileID: 11400000, guid: a05c91e8bfd82494da32fd0ff8de87a6, type: 2}
+  - {fileID: 11400000, guid: 57d0162322dec194bb325a9821c9b519, type: 2}
+  - {fileID: 11400000, guid: 63186ffcb75d4bb48848b98fb63a56c7, type: 2}
+  - {fileID: 11400000, guid: b2c8ff1b0ec972e4fb7a2e01759286f9, type: 2}
+  - {fileID: 11400000, guid: 491cad1e74ba1f345a1ac39aa7c52403, type: 2}
+  - {fileID: 11400000, guid: 1df18ab4313c9044f83d680d3cb492cb, type: 2}
+  - {fileID: 11400000, guid: f5ccb5f047d51ec459ce51cbd001b732, type: 2}
+  - {fileID: 11400000, guid: 06b8832efeeedb7489711be191768ca8, type: 2}
+  - {fileID: 11400000, guid: 76e5c1f6d8528d748ac2ac1f14cc1b7b, type: 2}
+  - {fileID: 11400000, guid: 0041e5440dce6ad4aa4eac925c0a306d, type: 2}
+  - {fileID: 11400000, guid: 642a1a2b3174dab42a2d518eb4921944, type: 2}
+  - {fileID: 11400000, guid: c1b192e74c969e6419efbde968d1b4da, type: 2}
+  - {fileID: 11400000, guid: c131cc27ab35a7244b6faf340e42340f, type: 2}
+  - {fileID: 11400000, guid: b03fd9576f4bf0548bdb8ad0c1cb8ada, type: 2}
+  - {fileID: 11400000, guid: 9cc6d983e5d655742ab26e5462dbed6d, type: 2}
+  - {fileID: 11400000, guid: 3188403831e23a344ad4da0a350749fe, type: 2}
   allCharacters:
   - {fileID: 11400000, guid: 44aca2fbae16e9a44961a10fa930477c, type: 2}
   - {fileID: 11400000, guid: fbeb02cbf0fa948ffa5ccb963f44e202, type: 2}
@@ -48,9 +63,3 @@ MonoBehaviour:
   panEdgeThreshold: 50
   defaultTypingSpeed: 30
   clueCollectFlyDuration: 0.8
-  sfxDialogue: {fileID: 8300000, guid: 9b3713be180dc4c02b628ee8efd0f298, type: 3}
-  sfxMenuClick: {fileID: 8300000, guid: 6eac6a9d261224ad69c7a7b608af62c0, type: 3}
-  sfxInteract: {fileID: 8300000, guid: 41d28da80f17641d7973167d82c686be, type: 3}
-  sfxPasscodeInput: {fileID: 8300000, guid: 13edca473bbc141bc9507906c648cefe, type: 3}
-  sfxPasscodeWrong: {fileID: 8300000, guid: 696467c384a7c4b67a47f1fb1f21d457, type: 3}
-  sfxSafeOpen: {fileID: 8300000, guid: e69e951880188487da3971ad91c6bd60, type: 3}

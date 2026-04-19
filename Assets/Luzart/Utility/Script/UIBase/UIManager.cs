@@ -286,6 +286,7 @@ namespace Luzart
         LockPuzzle = 23,
         ConfirmExit = 24,
         Pause = 25,
+        DetectiveMonologue = 26,
         // HUD
         InvestigationHud = 30,
     }

@@ -16,4 +16,7 @@ MonoBehaviour:
   hitboxSize: {x: 100, y: 100}
   isOneTimeOnly: 1
   highlightSprite: {fileID: 0}
+  prerequisites: []
+  onPrerequisiteNotMet: []
+  onInteract: []
   clue: {fileID: 11400000, guid: 47dd0563b0cc0429fabfab6943e2c5e3, type: 2}

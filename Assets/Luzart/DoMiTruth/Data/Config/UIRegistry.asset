@@ -77,3 +77,7 @@ MonoBehaviour:
     prefab: {fileID: 472962246387090334, guid: 700463afc2e43874c98bef430fcff473, type: 3}
     layerIndex: 0
     useCache: 0
+  - uiName: 26
+    prefab: {fileID: 86261782373035412, guid: 16a544ea1a0773342975108c188f993f, type: 3}
+    layerIndex: 1
+    useCache: 0

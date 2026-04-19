@@ -22,16 +22,24 @@ namespace Luzart
         {
             if (data == null) return;
 
-            // if (imgHighlight != null)
-            // {
-            //     if (data.highlightSprite != null)
-            //         imgHighlight.sprite = data.highlightSprite;
-            //     imgHighlight.enabled = false;
-            // }
-
+            // 1. One-time: đã interact rồi → ẩn vĩnh viễn
             if (data.isOneTimeOnly && GameDataManager.Instance.HasInteracted(data.objectId))
             {
                 gameObject.SetActive(false);
+                return;
+            }
+
+            // 2. Show conditions: prop chỉ hiện khi TẤT CẢ conditions thỏa mãn
+            if (data.showConditions != null && data.showConditions.Count > 0)
+            {
+                foreach (var cond in data.showConditions)
+                {
+                    if (cond != null && !cond.Evaluate())
+                    {
+                        gameObject.SetActive(false);
+                        return;
+                    }
+                }
             }
         }
 

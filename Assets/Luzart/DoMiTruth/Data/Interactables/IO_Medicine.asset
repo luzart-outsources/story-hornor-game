@@ -13,12 +13,14 @@ MonoBehaviour:
   m_Name: IO_Medicine
   m_EditorClassIdentifier: 
   objectId: IO_Medicine
-  interactType: 0
   hitboxSize: {x: 80, y: 80}
   isOneTimeOnly: 1
   highlightSprite: {fileID: 0}
-  clue: {fileID: 11400000, guid: 0041e5440dce6ad4aa4eac925c0a306d, type: 2}
-  dialogue: {fileID: 0}
-  lockConfig: {fileID: 0}
-  onUnlockSuccess: []
-  onUnlockFail: []
+  showConditions:
+  - type: 1
+    clueRef: {fileID: 0}
+    interactableRef: {fileID: 11400000, guid: ec17a2550286d3243a80595af48e9f2a, type: 2}
+    negate: 0
+  prerequisites: []
+  onPrerequisiteNotMet: []
+  onInteract: []

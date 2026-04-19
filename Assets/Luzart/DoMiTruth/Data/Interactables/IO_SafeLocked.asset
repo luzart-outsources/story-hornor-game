@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba3f14556d26041aaa32a423bc02ad0c, type: 3}
+  m_Name: IO_SafeLocked
+  m_EditorClassIdentifier: 
+  objectId: io_safe_locked
+  hitboxSize: {x: 375, y: 266}
+  isOneTimeOnly: 0
+  highlightSprite: {fileID: 21300000, guid: 1d031aaefae634a3ab7c9dc1c926f92f, type: 3}
+  showConditions:
+  - type: 2
+    clueRef: {fileID: 0}
+    interactableRef: {fileID: 11400000}
+    negate: 1
+  prerequisites: []
+  onPrerequisiteNotMet: []
+  onInteract: []
+  lockConfig: {fileID: 11400000, guid: 307be277980b19c41b6604a04e226ea7, type: 2}
+  onUnlockSuccess:
+  - {fileID: 11400000, guid: d80ee154ffd0c8044b88eff37db11b58, type: 2}
+  - {fileID: 11400000, guid: 7788eb6506e66a24784c6f6e17a8c6ae, type: 2}
+  - {fileID: 11400000, guid: 67dfe00961624470cb041f12c0333c35, type: 2}
+  - {fileID: 11400000, guid: 4988c3b83af154e6b947def399c9fcaa, type: 2}
+  - {fileID: 11400000, guid: 4da57716af9eebc42a6c2b01541b22f0, type: 2}
+  onUnlockFail: []
