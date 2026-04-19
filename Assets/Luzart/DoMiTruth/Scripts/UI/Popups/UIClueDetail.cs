@@ -37,6 +37,10 @@ namespace Luzart
 
         public override void OnClickClose()
         {
+            // Capture callback trước khi clear, gọi SAU KHI Hide hoàn tất
+            var callback = onCloseCallback;
+            onCloseCallback = null;
+
             if (currentClue != null && currentClue.clueImage != null && notebookTarget != null)
             {
                 var config = GameFlowController.Instance.GameConfig;
@@ -47,16 +51,18 @@ namespace Luzart
                     imgClue != null ? imgClue.transform.position : transform.position,
                     notebookTarget,
                     duration,
-                    () => base.OnClickClose()
+                    () =>
+                    {
+                        base.OnClickClose();
+                        callback?.Invoke();
+                    }
                 );
             }
             else
             {
                 base.OnClickClose();
+                callback?.Invoke();
             }
-
-            onCloseCallback?.Invoke();
-            onCloseCallback = null;
         }
     }
 }
